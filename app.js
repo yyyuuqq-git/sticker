@@ -4,18 +4,22 @@
 
 // 1. Supabase 연동 정보 설정
 // TODO: Supabase 연동 시 아래 두 값을 채워주세요. 비어있으면 자동으로 로컬 모드로 부드럽게 작동합니다.
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://uewhzfktonpasqjnlzhm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVld2h6Zmt0b25wYXNxam5semhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4ODkxNTEsImV4cCI6MjA5OTQ2NTE1MX0.-o54WOhjWM6eV-ZI6u3_fiFLh9JyqhVMdtTqVkNtp0I";
 
-let supabase = null;
-const isLocalMode = !SUPABASE_URL || !SUPABASE_ANON_KEY;
+let supabaseClient = null;
+let isLocalMode = !SUPABASE_URL || !SUPABASE_ANON_KEY;
 
 if (!isLocalMode) {
     try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        if (!window.supabase) {
+            throw new Error("Supabase CDN 라이브러리가 로드되지 않았습니다.");
+        }
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("Supabase 연동이 정상 활성화되었습니다.");
     } catch (e) {
         console.error("Supabase 초기화 실패. 로컬 모드로 전환합니다.", e);
+        isLocalMode = true;
     }
 } else {
     console.log("Supabase 설정이 비어있어 '로컬 모드(기기 브라우저 저장)'로 구동됩니다.");
@@ -93,7 +97,7 @@ const btnSettings = document.getElementById("btn-settings");
 
 // 보드 불러오기
 async function apiGetBoard(boardId) {
-    if (isLocalMode) {
+    if (isLocalMode || !supabaseClient) {
         const localData = localStorage.getItem(`board_${boardId}`);
         if (localData) {
             return JSON.parse(localData);
@@ -105,7 +109,7 @@ async function apiGetBoard(boardId) {
         return null;
     } else {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from("praise_boards")
                 .select("*")
                 .eq("id", boardId)
@@ -114,24 +118,31 @@ async function apiGetBoard(boardId) {
             if (data) {
                 // 로컬 캐시 업데이트
                 localStorage.setItem(`board_${boardId}`, JSON.stringify(data));
+                return data;
             }
-            return data;
+            if (boardId === "DEFAULT") {
+                await apiCreateBoard(defaultBoardData);
+                return defaultBoardData;
+            }
+            return null;
         } catch (e) {
             console.error("보드 조회 중 서버 에러 발생, 캐시를 반환합니다.", e);
             const cached = localStorage.getItem(`board_${boardId}`);
-            return cached ? JSON.parse(cached) : null;
+            if (cached) return JSON.parse(cached);
+            if (boardId === "DEFAULT") return defaultBoardData;
+            return null;
         }
     }
 }
 
 // 보드 생성 또는 수정
 async function apiCreateBoard(board) {
-    if (isLocalMode) {
+    if (isLocalMode || !supabaseClient) {
         localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
         return true;
     } else {
         try {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from("praise_boards")
                 .upsert(board);
             if (error) throw error;
@@ -146,12 +157,12 @@ async function apiCreateBoard(board) {
 
 // 부착된 스티커 목록 가져오기
 async function apiGetStickers(boardId) {
-    if (isLocalMode) {
+    if (isLocalMode || !supabaseClient) {
         const localData = localStorage.getItem(`stickers_${boardId}`);
         return localData ? JSON.parse(localData) : [];
     } else {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from("praise_stickers")
                 .select("*")
                 .eq("board_id", boardId);
@@ -168,7 +179,7 @@ async function apiGetStickers(boardId) {
 
 // 스티커 부착
 async function apiAddSticker(boardId, index) {
-    if (isLocalMode) {
+    if (isLocalMode || !supabaseClient) {
         const current = await apiGetStickers(boardId);
         if (!current.some(s => s.sticker_index === index)) {
             current.push({ board_id: boardId, sticker_index: index });
@@ -177,7 +188,7 @@ async function apiAddSticker(boardId, index) {
         return true;
     } else {
         try {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from("praise_stickers")
                 .insert({ board_id: boardId, sticker_index: index });
             if (error) throw error;
@@ -191,14 +202,14 @@ async function apiAddSticker(boardId, index) {
 
 // 스티커 떼기
 async function apiRemoveSticker(boardId, index) {
-    if (isLocalMode) {
+    if (isLocalMode || !supabaseClient) {
         let current = await apiGetStickers(boardId);
         current = current.filter(s => s.sticker_index !== index);
         localStorage.setItem(`stickers_${boardId}`, JSON.stringify(current));
         return true;
     } else {
         try {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from("praise_stickers")
                 .delete()
                 .eq("board_id", boardId)
@@ -221,7 +232,7 @@ function getStitchSvg(isSticker) {
     const nose = isSticker ? "#0D192B" : "rgba(180, 180, 180, 0.2)";
     const eye = isSticker ? "#0D192B" : "rgba(180, 180, 180, 0.2)";
     const patch = isSticker ? "#A1D2FA" : "rgba(180, 180, 180, 0.2)";
-    
+
     let reflection = "";
     if (isSticker) {
         reflection = `
@@ -229,7 +240,7 @@ function getStitchSvg(isSticker) {
             <circle cx="68" cy="43" r="2.5" fill="white" />
         `;
     }
-    
+
     return `
         <svg viewBox="0 0 100 100" class="sticker-svg">
             <!-- Left Ear -->
@@ -275,21 +286,21 @@ async function refreshApp() {
         await refreshApp();
         return;
     }
-    
+
     currentBoard = board;
 
     // 2. 스티커 정보 로드
     currentStickers = await apiGetStickers(currentBoardId);
     const activeIndices = new Set(currentStickers.map(s => s.sticker_index));
-    
+
     // 3. 헤더 및 요약 카드 업데이트
     boardTitle.textContent = currentBoard.title;
     boardCodeDisplay.textContent = `보드 코드: ${currentBoard.id}`;
-    
+
     const targetCount = currentBoard.target_count;
     const completedCount = currentStickers.length;
     progressCount.textContent = `${completedCount} / ${targetCount} 개`;
-    
+
     const percentage = Math.min((completedCount / targetCount) * 100, 100);
     progressBarFill.style.width = `${percentage}%`;
 
@@ -313,22 +324,22 @@ async function refreshApp() {
     stickerGrid.innerHTML = "";
     for (let i = 0; i < targetCount; i++) {
         const isActive = activeIndices.has(i);
-        
+
         const slot = document.createElement("div");
         slot.className = `grid-slot ${isActive ? "active" : ""}`;
         slot.innerHTML = `
             ${getStitchSvg(isActive)}
             <span class="slot-number">${i + 1}</span>
         `;
-        
+
         // 칸 클릭 핸들러
         slot.addEventListener("click", () => handleSlotClick(i, isActive));
         stickerGrid.appendChild(slot);
     }
-    
+
     // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
     shareCodeText.textContent = currentBoard.id;
-    
+
     if (isEditorMode) {
         editTitle.value = currentBoard.title;
         editTargetCount.value = currentBoard.target_count;
@@ -376,7 +387,7 @@ function updateRoleUI() {
         roleIcon.textContent = "edit";
         roleText.textContent = "여자친구 모드 (스티커 부착 가능)";
         btnToggleRole.textContent = "로그아웃";
-        
+
         // 설정 모달 내 필드 활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = false);
         btnSettingsSave.classList.remove("hidden");
@@ -385,7 +396,7 @@ function updateRoleUI() {
         roleIcon.textContent = "visibility";
         roleText.textContent = "남자친구 모드 (조회 전용)";
         btnToggleRole.textContent = "편집 전환";
-        
+
         // 설정 모달 내 필드 비활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = true);
         btnSettingsSave.classList.add("hidden");
@@ -403,7 +414,7 @@ function showToast(message) {
     toast.textContent = message;
     toast.classList.remove("hidden");
     toast.style.opacity = 1;
-    
+
     if (toastTimeout) clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => {
         toast.style.opacity = 0;
@@ -415,7 +426,7 @@ function showToast(message) {
 btnPinSubmit.addEventListener("click", () => {
     const pin = inputPin.value;
     const requiredPin = currentBoard.editor_pin || "1234";
-    
+
     if (pin === requiredPin) {
         isEditorMode = true;
         inputPin.value = "";
@@ -473,10 +484,10 @@ btnCreateBoard.addEventListener("click", async () => {
         showToast("코드를 입력해 주세요.");
         return;
     }
-    
+
     loadingSpinner.classList.remove("hidden");
     modalShare.classList.add("hidden");
-    
+
     const existing = await apiGetBoard(code);
     if (existing) {
         showToast("이미 사용 중인 코드입니다. 다른 코드를 사용해 주세요.");
@@ -581,10 +592,10 @@ btnSettingsSave.addEventListener("click", async () => {
 // 스티커 제거 확인 처리
 btnDeleteConfirm.addEventListener("click", async () => {
     if (deleteTargetIndex === null) return;
-    
+
     loadingSpinner.classList.remove("hidden");
     modalDelete.classList.add("hidden");
-    
+
     const success = await apiRemoveSticker(currentBoardId, deleteTargetIndex);
     if (success) {
         showToast(`${deleteTargetIndex + 1}번째 스티커를 제거했습니다.`);
@@ -607,20 +618,20 @@ btnDeleteCancel.addEventListener("click", () => {
 document.addEventListener("DOMContentLoaded", () => {
     updateRoleUI();
     refreshApp();
-    
+
     // 타 기기에서의 업데이트 감지를 위해 5초마다 자동 싱크 (폴링)
     setInterval(() => {
         // 사용자가 입력을 입력하거나 모달 창을 띄운 작업 중이 아닐 때만 렌더링 리프레시 진행해 간섭 차단
-        const isModalOpen = !modalPin.classList.contains("hidden") || 
-                            !modalSettings.classList.contains("hidden") || 
-                            !modalDelete.classList.contains("hidden") || 
-                            !modalShare.classList.contains("hidden");
-        
+        const isModalOpen = !modalPin.classList.contains("hidden") ||
+            !modalSettings.classList.contains("hidden") ||
+            !modalDelete.classList.contains("hidden") ||
+            !modalShare.classList.contains("hidden");
+
         if (!isModalOpen) {
             apiGetStickers(currentBoardId).then(stickers => {
                 const currentActive = new Set(currentStickers.map(s => s.sticker_index));
                 const newActive = new Set(stickers.map(s => s.sticker_index));
-                
+
                 // 스티커 구성원 변경 시에만 화면 부분 렌더링 리프레시 실행
                 if (currentActive.size !== newActive.size || [...currentActive].some(x => !newActive.has(x))) {
                     refreshApp();
