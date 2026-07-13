@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.praise_boards (
 
 -- 2. 붙여진 스티커 테이블 (praise_stickers)
 CREATE TABLE IF NOT EXISTS public.praise_stickers (
-    id GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     board_id TEXT REFERENCES public.praise_boards(id) ON DELETE CASCADE NOT NULL,
     sticker_index INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
