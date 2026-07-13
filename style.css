@@ -621,3 +621,65 @@ input:disabled {
     opacity: 1;
     transition: opacity 0.3s;
 }
+
+/* 15. 초기 설정 화면 (웰컴 스크린) */
+.welcome-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--stitch-bg-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    padding: 20px;
+}
+
+.welcome-card {
+    background-color: var(--stitch-card-bg);
+    width: 100%;
+    max-width: 400px;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.welcome-header {
+    text-align: center;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.welcome-logo-icon {
+    font-size: 40px;
+    color: var(--stitch-primary);
+    margin-bottom: 4px;
+}
+
+.welcome-header h2 {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.welcome-header p {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.helper-text {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}

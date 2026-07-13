@@ -87,6 +87,14 @@ const inputCreateBoard = document.getElementById("input-create-board");
 const btnCreateBoard = document.getElementById("btn-create-board");
 const btnShareClose = document.getElementById("btn-share-close");
 
+const welcomeScreen = document.getElementById("welcome-screen");
+const setupBoardId = document.getElementById("setup-board-id");
+const setupTitle = document.getElementById("setup-title");
+const setupTargetCount = document.getElementById("setup-target-count");
+const setupReward = document.getElementById("setup-reward");
+const setupPin = document.getElementById("setup-pin");
+const btnSetupSubmit = document.getElementById("btn-setup-submit");
+
 // 공용 버튼 트리거
 const btnShare = document.getElementById("btn-share");
 const btnSettings = document.getElementById("btn-settings");
@@ -277,15 +285,25 @@ function getCosmicStickerSvg(index, isSticker) {
 // 현재 화면 리프레시
 async function refreshApp() {
     // 1. 보드 정보 로드
-    const board = await apiGetBoard(currentBoardId);
+    let board = await apiGetBoard(currentBoardId);
     if (!board) {
-        showToast("존재하지 않는 공유 칭찬판입니다. 기본 보드로 이동합니다.");
-        currentBoardId = "DEFAULT";
-        localStorage.setItem("current_board_id", "DEFAULT");
-        await refreshApp();
+        // 보드가 존재하지 않음 -> 초기 설정 화면 노출
+        loadingSpinner.classList.add("hidden");
+        appContent.classList.add("hidden");
+        welcomeScreen.classList.remove("hidden");
+        
+        // 설정 폼에 현재 보드 ID 자동 완성 (DEFAULT인 경우 무작위 코드 생성)
+        if (currentBoardId === "DEFAULT") {
+            const randId = "COSMIC-" + Math.floor(1000 + Math.random() * 9000);
+            setupBoardId.value = randId;
+        } else {
+            setupBoardId.value = currentBoardId;
+        }
         return;
     }
 
+    // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
+    welcomeScreen.classList.add("hidden");
     currentBoard = board;
 
     // 2. 스티커 정보 로드
@@ -470,6 +488,9 @@ btnCopyCode.addEventListener("click", () => {
 // 공유 다이얼로그 노출/숨김
 btnShare.addEventListener("click", () => {
     modalShare.classList.remove("hidden");
+    const shareLinkInput = document.getElementById("share-link-input");
+    const shareLink = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
+    shareLinkInput.value = shareLink;
 });
 
 btnShareClose.addEventListener("click", () => {
@@ -615,8 +636,83 @@ btnDeleteCancel.addEventListener("click", () => {
 // 9. 앱 초기 구동 및 실시간 데이터 싱크 폴링
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
+    // 1. URL 쿼리 파라미터에서 보드 ID가 넘어온 경우 자동 설정
+    const urlParams = new URLSearchParams(window.location.search);
+    const boardParam = urlParams.get("board");
+    if (boardParam) {
+        currentBoardId = boardParam.trim().toUpperCase();
+        localStorage.setItem("current_board_id", currentBoardId);
+    }
+
     updateRoleUI();
     refreshApp();
+
+    // 2. 웰컴 스크린 칭찬판 최초 생성 처리
+    btnSetupSubmit.addEventListener("click", async () => {
+        const code = setupBoardId.value.trim().toUpperCase();
+        const title = setupTitle.value.trim();
+        const target = parseInt(setupTargetCount.value);
+        const reward = setupReward.value.trim();
+        const pin = setupPin.value.trim();
+
+        if (!code) {
+            showToast("공유 코드를 입력해 주세요.");
+            return;
+        }
+        if (!title) {
+            showToast("칭찬판 제목을 입력해 주세요.");
+            return;
+        }
+        if (isNaN(target) || target < 1 || target > 100) {
+            showToast("올바른 목표 개수(1~100)를 입력하세요.");
+            return;
+        }
+        if (!pin) {
+            showToast("비밀번호 PIN을 입력해 주세요.");
+            return;
+        }
+
+        loadingSpinner.classList.remove("hidden");
+        welcomeScreen.classList.add("hidden");
+
+        const newBoard = {
+            id: code,
+            title: title,
+            target_count: target,
+            reward_text: reward,
+            editor_pin: pin
+        };
+
+        const success = await apiCreateBoard(newBoard);
+        if (success) {
+            currentBoardId = code;
+            localStorage.setItem("current_board_id", code);
+            // 생성 시에는 자동으로 편집자 모드 승인
+            isEditorMode = true;
+            updateRoleUI();
+            await refreshApp();
+            showToast("칭찬판이 성공적으로 개설되었습니다! 🚀");
+            
+            // 브라우저 주소창 URL 업데이트
+            const newUrl = `${window.location.origin}${window.location.pathname}?board=${code}`;
+            window.history.replaceState({ path: newUrl }, "", newUrl);
+        } else {
+            showToast("칭찬판 개설에 실패했습니다.");
+            welcomeScreen.classList.remove("hidden");
+            loadingSpinner.classList.add("hidden");
+        }
+    });
+
+    // 3. 초대 링크 복사 처리
+    const btnCopyLink = document.getElementById("btn-copy-link");
+    btnCopyLink.addEventListener("click", () => {
+        const shareLinkInput = document.getElementById("share-link-input");
+        navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+            showToast("초대 링크가 복사되었습니다! 📋");
+        }).catch(err => {
+            showToast("링크 복사에 실패했습니다.");
+        });
+    });
 
     // 타 기기에서의 업데이트 감지를 위해 5초마다 자동 싱크 (폴링)
     setInterval(() => {

@@ -44,6 +44,48 @@
             <div class="spinner"></div>
         </div>
 
+        <!-- 1.5 초기 설정 화면 (처음 접속하거나 새 보드 생성 시 노출) -->
+        <div id="welcome-screen" class="welcome-screen hidden">
+            <div class="welcome-card">
+                <div class="welcome-header">
+                    <span class="material-icons welcome-logo-icon">auto_awesome</span>
+                    <h2>우주 칭찬나라 시작하기</h2>
+                    <p>커플만의 실시간 칭찬판 정보와 비밀번호를 설정해 주세요.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="setup-board-id">공유 코드 (Board Code)</label>
+                    <input type="text" id="setup-board-id" style="text-transform: uppercase;">
+                    <small class="helper-text">서로 연결할 때 사용하는 코드입니다. (자동 생성됨)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="setup-title">칭찬판 제목</label>
+                    <input type="text" id="setup-title" placeholder="예: 민지의 착한 일 판 💖">
+                </div>
+                
+                <div class="form-group">
+                    <label for="setup-target-count">목표 스티커 개수 (20 ~ 50)</label>
+                    <input type="number" id="setup-target-count" value="30" min="1" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="setup-reward">달성 완료 보상</label>
+                    <input type="text" id="setup-reward" placeholder="예: 맛있는 디저트 데이트! 🍦">
+                </div>
+                
+                <div class="form-group">
+                    <label for="setup-pin">편집용 비밀번호 PIN</label>
+                    <input type="password" id="setup-pin" placeholder="숫자 4자리 권장" value="1234">
+                    <small class="helper-text">여자친구가 스티커를 붙일 때 사용할 비밀번호입니다.</small>
+                </div>
+                
+                <button id="btn-setup-submit" class="btn btn-primary" style="margin-top: 12px; width: 100%;">
+                    칭찬판 만들기 🚀
+                </button>
+            </div>
+        </div>
+
         <!-- 2. 메인 컨텐츠 영역 -->
         <main class="app-content hidden">
             <!-- 역할 전환 배너 -->
@@ -178,6 +220,14 @@
                 <button id="btn-copy-code" class="icon-button" title="복사">
                     <span class="material-icons">content_copy</span>
                 </button>
+            </div>
+            
+            <div class="form-group" style="margin-top: 8px;">
+                <label>초대 링크 (스마트폰 바로 접속용)</label>
+                <div class="input-row">
+                    <input type="text" id="share-link-input" readonly style="background-color: #F3F4F6; font-size: 11px; cursor: default;">
+                    <button id="btn-copy-link" class="btn btn-primary btn-sm">링크 복사</button>
+                </div>
             </div>
 
             <hr class="divider">
