@@ -503,30 +503,10 @@ async function renderBoardList() {
     if (!boardListContainer) return;
     boardListContainer.innerHTML = "";
     
-    // 1. 서버에 있는 모든 테스트용 보드 조회
-    const globalList = await apiGetAllBoards();
-    
-    // 2. 현재 내 로컬 기기 목록 가져오기
+    // 1. 현재 내 로컬 기기 목록(직접 생성/불러온 보드) 가져오기
     let localList = getRegisteredBoards();
-    const localIds = new Set(localList.map(b => b.id));
     
-    // 3. 서버에는 있으나 내 로컬 기기 목록에는 없는 보드가 있다면 자동으로 등록 (백그라운드 연동)
-    let hasNewSync = false;
-    globalList.forEach(board => {
-        if (!localIds.has(board.id)) {
-            // 새로 발견된 보드 -> 조용히 나의 기기 목록에 추가
-            addRegisteredBoard(board.id, board.title);
-            localIds.add(board.id);
-            hasNewSync = true;
-        }
-    });
-    
-    // 자동 추가가 생겼을 경우, 최신 로컬 목록 다시 파싱
-    if (hasNewSync) {
-        localList = getRegisteredBoards();
-    }
-    
-    // 4. 단일 리스트로 깔끔하게 렌더링
+    // 2. 단일 리스트로 깔끔하게 렌더링
     if (localList.length === 0) {
         const emptyMsg = document.createElement("div");
         emptyMsg.style.fontSize = "11px";
@@ -622,32 +602,52 @@ function createBoardItemDOM(board, isLocal) {
     item.addEventListener("touchcancel", cancelPress, { passive: true });
     item.addEventListener("touchmove", cancelPress, { passive: true });
 
-    // 3. 삭제 버튼 클릭 (완전 삭제)
+    // 3. 삭제 버튼 클릭 (완전 삭제 또는 로컬 목록 제거)
     if (isLocal) {
         const btnDelete = item.querySelector(".btn-delete-board");
         btnDelete.addEventListener("click", async (e) => {
             e.stopPropagation();
-            if (confirm(`'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 등록된 스티커 목록이 모두 영구적으로 삭제됩니다.)`)) {
-                loadingSpinner.classList.remove("hidden");
-                const wasActive = board.id === currentBoardId;
-                
-                // 실제 데이터 삭제 API 호출
-                await apiDeleteBoard(board.id);
-                
-                // 로컬 기기 리스트에서 제외
-                removeRegisteredBoard(board.id);
-                
-                if (wasActive) {
-                    sidebar.classList.remove("open");
-                    sidebarOverlay.classList.add("hidden");
-                    const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
-                    window.history.replaceState({ path: newUrl }, "", newUrl);
-                    await refreshApp();
-                } else {
-                    renderBoardList();
-                    loadingSpinner.classList.add("hidden");
+            const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
+
+            if (hasPermission) {
+                // 편집 권한이 있는 경우 -> DB 실제 데이터 및 캐시 영구 삭제
+                if (confirm(`'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 등록된 스티커 목록이 모두 영구적으로 삭제됩니다.)`)) {
+                    loadingSpinner.classList.remove("hidden");
+                    const wasActive = board.id === currentBoardId;
+                    
+                    await apiDeleteBoard(board.id);
+                    removeRegisteredBoard(board.id);
+                    
+                    if (wasActive) {
+                        sidebar.classList.remove("open");
+                        sidebarOverlay.classList.add("hidden");
+                        const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
+                        window.history.replaceState({ path: newUrl }, "", newUrl);
+                        await refreshApp();
+                    } else {
+                        renderBoardList();
+                        loadingSpinner.classList.add("hidden");
+                    }
+                    showToast("스티커판이 완전히 삭제되었습니다.");
                 }
-                showToast("스티커판이 완전히 삭제되었습니다.");
+            } else {
+                // 편집 권한이 없는 경우 -> 내 목록에서만 제외
+                if (confirm(`'${board.title}' 판을 내 기기 목록에서 제외하시겠습니까?\n(편집 권한이 없으므로 실제 서버 데이터는 삭제되지 않고 내 목록에서만 제거됩니다.)`)) {
+                    const wasActive = board.id === currentBoardId;
+                    removeRegisteredBoard(board.id);
+                    
+                    if (wasActive) {
+                        loadingSpinner.classList.remove("hidden");
+                        sidebar.classList.remove("open");
+                        sidebarOverlay.classList.add("hidden");
+                        const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
+                        window.history.replaceState({ path: newUrl }, "", newUrl);
+                        await refreshApp();
+                    } else {
+                        renderBoardList();
+                    }
+                    showToast("목록에서 제거되었습니다.");
+                }
             }
         });
     }
