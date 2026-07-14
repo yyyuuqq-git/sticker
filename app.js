@@ -1244,6 +1244,29 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem("board_DEFAULT");
     localStorage.removeItem("stickers_DEFAULT");
 
+    // [소독 패치] 모바일 기기 로컬스토리지 내 자동 누적된 타인의 테스트 칭찬판 찌꺼기 정리
+    try {
+        const boards = JSON.parse(localStorage.getItem("registered_boards") || "[]");
+        if (boards.length > 0) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeParamId = (urlParams.get("board") || "").trim().toUpperCase();
+            
+            const cleaned = boards.filter(b => {
+                const isCurrent = b.id === currentBoardId || b.id === activeParamId;
+                const hasPermission = localStorage.getItem(`is_editor_${b.id}`) === "true";
+                const isNotTestBoard = !b.id.startsWith("TEST-"); // 내 개설판(BON_WOOK 등) 보존
+                
+                return isCurrent || hasPermission || isNotTestBoard;
+            });
+            
+            if (cleaned.length !== boards.length) {
+                localStorage.setItem("registered_boards", JSON.stringify(cleaned));
+            }
+        }
+    } catch (e) {
+        console.error("로컬 스토리지 칭찬판 리스트 소독 중 오류:", e);
+    }
+
     // 2. URL 쿼리 파라미터에서 보드 ID가 넘어온 경우 자동 설정
     const urlParams = new URLSearchParams(window.location.search);
     const boardParam = urlParams.get("board");
