@@ -529,9 +529,11 @@ function createBoardItemDOM(board, isLocal) {
     const item = document.createElement("div");
     item.className = `board-item ${isActive ? "active" : ""}`;
     
-    // 나의 칭찬판 목록일 때만 삭제(목록에서 제거) 아이콘 노출
-    const deleteButtonHtml = isLocal ? `
-        <button class="btn-delete-board" title="목록에서 삭제">
+    const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
+
+    // 나의 칭찬판 목록이며 + 동시에 해당 보드의 편집 권한(여자친구 PIN)을 갖고 있을 때만 삭제(휴지통) 아이콘 노출
+    const deleteButtonHtml = (isLocal && hasPermission) ? `
+        <button class="btn-delete-board" title="삭제">
             <span class="material-icons" style="font-size: 16px;">delete</span>
         </button>
     ` : '';
@@ -602,20 +604,20 @@ function createBoardItemDOM(board, isLocal) {
     item.addEventListener("touchcancel", cancelPress, { passive: true });
     item.addEventListener("touchmove", cancelPress, { passive: true });
 
-    // 3. 삭제 버튼 클릭 (완전 삭제 또는 로컬 목록 제거)
-    if (isLocal) {
+    // 3. 삭제 버튼 클릭 (완전 삭제 - 편집 권한 보유 시에만 작동)
+    if (isLocal && hasPermission) {
         const btnDelete = item.querySelector(".btn-delete-board");
-        btnDelete.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
-
-            if (hasPermission) {
-                // 편집 권한이 있는 경우 -> DB 실제 데이터 및 캐시 영구 삭제
+        if (btnDelete) {
+            btnDelete.addEventListener("click", async (e) => {
+                e.stopPropagation();
                 if (confirm(`'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 등록된 스티커 목록이 모두 영구적으로 삭제됩니다.)`)) {
                     loadingSpinner.classList.remove("hidden");
                     const wasActive = board.id === currentBoardId;
                     
+                    // 실제 데이터 삭제 API 호출
                     await apiDeleteBoard(board.id);
+                    
+                    // 로컬 기기 리스트에서 제외
                     removeRegisteredBoard(board.id);
                     
                     if (wasActive) {
@@ -630,26 +632,8 @@ function createBoardItemDOM(board, isLocal) {
                     }
                     showToast("스티커판이 완전히 삭제되었습니다.");
                 }
-            } else {
-                // 편집 권한이 없는 경우 -> 내 목록에서만 제외
-                if (confirm(`'${board.title}' 판을 내 기기 목록에서 제외하시겠습니까?\n(편집 권한이 없으므로 실제 서버 데이터는 삭제되지 않고 내 목록에서만 제거됩니다.)`)) {
-                    const wasActive = board.id === currentBoardId;
-                    removeRegisteredBoard(board.id);
-                    
-                    if (wasActive) {
-                        loadingSpinner.classList.remove("hidden");
-                        sidebar.classList.remove("open");
-                        sidebarOverlay.classList.add("hidden");
-                        const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
-                        window.history.replaceState({ path: newUrl }, "", newUrl);
-                        await refreshApp();
-                    } else {
-                        renderBoardList();
-                    }
-                    showToast("목록에서 제거되었습니다.");
-                }
-            }
-        });
+            });
+        }
     }
 
     return item;
