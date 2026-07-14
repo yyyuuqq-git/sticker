@@ -26,16 +26,50 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- 0. 사이드바 (서랍 메뉴) -->
+        <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">✨ 스티커 판 목록</div>
+                <button id="btn-sidebar-close" class="icon-button" title="메뉴 닫기">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            
+            <div class="sidebar-body">
+                <div id="board-list" class="board-list">
+                    <!-- 자바스크립트로 동적 렌더링 -->
+                </div>
+                <button id="btn-add-board-sidebar" class="btn-add-board" title="새 스티커판 추가">
+                    <span class="material-icons">add</span> 새 스티커판 만들기
+                </button>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-role-area">
+                    <button id="btn-toggle-role" class="sidebar-role-btn reader-mode">
+                        <span id="role-icon" class="material-icons">visibility</span>
+                        <span id="role-text">남자친구 모드 (조회 전용)</span>
+                    </button>
+                </div>
+                <div class="sidebar-actions-right">
+                    <button id="btn-share" class="icon-button" title="공유하기">
+                        <span class="material-icons">share</span>
+                    </button>
+                    <button id="btn-settings" class="icon-button" title="설정">
+                        <span class="material-icons">settings</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
         <!-- 1. 헤더 (상단 바) -->
         <header class="app-header">
-            <h1 class="logo">✨ 우주 칭찬나라</h1>
-            <div class="header-actions">
-                <button id="btn-share" class="icon-button" title="공유하기">
-                    <span class="material-icons">share</span>
+            <div class="header-left">
+                <button id="btn-menu" class="icon-button" title="메뉴" style="margin-right: 8px;">
+                    <span class="material-icons">menu</span>
                 </button>
-                <button id="btn-settings" class="icon-button" title="설정">
-                    <span class="material-icons">settings</span>
-                </button>
+                <h1 class="logo">우주 칭찬나라</h1>
             </div>
         </header>
 
@@ -88,15 +122,6 @@
 
         <!-- 2. 메인 컨텐츠 영역 -->
         <main class="app-content hidden">
-            <!-- 역할 전환 배너 -->
-            <div id="role-banner" class="role-banner reader-mode">
-                <div class="role-status">
-                    <span id="role-icon" class="material-icons">visibility</span>
-                    <span id="role-text" class="status-label">남자친구 모드 (조회 전용)</span>
-                </div>
-                <button id="btn-toggle-role" class="toggle-button">편집 전환</button>
-            </div>
-
             <!-- 칭찬판 요약 카드 -->
             <section class="summary-card">
                 <h2 id="board-title" class="board-title">스티치와 함께하는 칭찬판</h2>
@@ -171,22 +196,18 @@
 
             <!-- 현재 칭찬판 수정 (편집 상태일 때만 활성화) -->
             <div class="settings-section">
-                <h4 class="section-title">⚙️ 현재 칭찬판 수정 <span class="badge-lock">(여자친구 권한 필요)</span></h4>
-                <div class="form-group">
-                    <label for="edit-title">칭찬판 제목</label>
-                    <input type="text" id="edit-title" class="editor-only-field" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="edit-target-count">목표 개수 (20 ~ 50)</label>
-                    <input type="number" id="edit-target-count" class="editor-only-field" min="1" max="100" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="edit-reward">달성 완료 보상</label>
-                    <input type="text" id="edit-reward" class="editor-only-field" disabled>
-                </div>
+                <h4 class="section-title">⚙️ 칭찬판 보안 및 라벨 설정 <span class="badge-lock">(여자친구 권한 필요)</span></h4>
                 <div class="form-group">
                     <label for="edit-pin">편집용 비밀번호 PIN</label>
                     <input type="password" id="edit-pin" class="editor-only-field" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="edit-reader-name">조회 모드 명칭 (남자친구 모드)</label>
+                    <input type="text" id="edit-reader-name" class="editor-only-field" placeholder="기본값: 남자친구 모드 (조회 전용)" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="edit-editor-name">편집 모드 명칭 (여자친구 모드)</label>
+                    <input type="text" id="edit-editor-name" class="editor-only-field" placeholder="기본값: 여자친구 모드 (부착 가능)" disabled>
                 </div>
             </div>
 
@@ -212,33 +233,14 @@
     <!-- D. 공유 및 생성 모달 -->
     <div id="modal-share" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3 class="modal-title">🔗 커플 공유하기</h3>
-            <p class="modal-desc">현재 사용 중인 칭찬판 코드는 다음과 같습니다. 여자친구의 기기에서 이 코드를 입력해 함께 실시간으로 사용할 수 있습니다.</p>
+            <h3 class="modal-title">🆕 새 칭찬판 만들기</h3>
+            <p class="modal-desc">새로 만들 칭찬판의 이름을 입력해 주세요.</p>
             
-            <div class="share-code-box">
-                <span id="share-code-text" class="share-code">DEFAULT</span>
-                <button id="btn-copy-code" class="icon-button" title="복사">
-                    <span class="material-icons">content_copy</span>
-                </button>
+            <div class="form-group" style="margin-top: 16px;">
+                <input type="text" id="input-create-board-title" placeholder="칭찬판 이름 (예: 우리의 새로운 칭찬판 💖)">
             </div>
             
-            <div class="form-group" style="margin-top: 8px;">
-                <label>초대 링크 (스마트폰 바로 접속용)</label>
-                <div class="input-row">
-                    <input type="text" id="share-link-input" readonly style="background-color: #F3F4F6; font-size: 11px; cursor: default;">
-                    <button id="btn-copy-link" class="btn btn-primary btn-sm">링크 복사</button>
-                </div>
-            </div>
-
-            <hr class="divider">
-
-            <h4 class="section-title">🆕 새 칭찬판 만들기</h4>
-            <p class="modal-desc">커플만의 공유할 새로운 판 코드를 직접 만들 수 있습니다.</p>
-            <div class="form-group">
-                <input type="text" id="input-create-board" placeholder="예: LOVE-BOARD-7" style="text-transform: uppercase;">
-            </div>
-            
-            <div class="modal-actions">
+            <div class="modal-actions" style="margin-top: 24px;">
                 <button id="btn-share-close" class="btn btn-secondary">닫기</button>
                 <button id="btn-create-board" class="btn btn-primary">생성 및 이동</button>
             </div>
@@ -280,6 +282,32 @@
                 <button id="btn-memo-edit-cancel" class="btn btn-secondary hidden">취소</button>
                 <button id="btn-memo-edit-save" class="btn btn-primary hidden">저장 🚀</button>
                 <button id="btn-memo-view-close" class="btn btn-secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- G. 칭찬판 정보 수정 모달 (길게 누를 때 표시) -->
+    <div id="modal-board-edit" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="modal-title">⚙️ 칭찬판 상세 수정</h3>
+            <p class="modal-desc">칭찬판의 제목, 목표 개수, 보상을 수정합니다. <span class="badge-lock">(여자친구 권한 필요)</span></p>
+            
+            <div class="form-group" style="margin-top: 16px;">
+                <label for="edit-board-title">칭찬판 제목</label>
+                <input type="text" id="edit-board-title" class="editor-only-field" disabled>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label for="edit-board-target-count">목표 개수 (20 ~ 50)</label>
+                <input type="number" id="edit-board-target-count" class="editor-only-field" min="1" max="100" disabled>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label for="edit-board-reward">달성 완료 보상</label>
+                <input type="text" id="edit-board-reward" class="editor-only-field" disabled>
+            </div>
+            
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button id="btn-board-edit-close" class="btn btn-secondary">닫기</button>
+                <button id="btn-board-edit-save" class="btn btn-primary hidden">저장</button>
             </div>
         </div>
     </div>

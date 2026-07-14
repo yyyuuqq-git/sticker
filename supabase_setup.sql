@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS public.praise_boards (
     target_count INTEGER NOT NULL DEFAULT 30,
     reward_text TEXT,
     editor_pin TEXT NOT NULL,
+    reader_role_name TEXT DEFAULT '남자친구 모드 (조회 전용)',
+    editor_role_name TEXT DEFAULT '여자친구 모드 (부착 가능)',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -20,6 +22,10 @@ CREATE TABLE IF NOT EXISTS public.praise_stickers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     UNIQUE(board_id, sticker_index)
 );
+
+-- 기존 praise_boards 테이블에 역할명 커스텀 컬럼 추가가 필요한 경우 실행할 쿼리:
+-- ALTER TABLE public.praise_boards ADD COLUMN IF NOT EXISTS reader_role_name TEXT DEFAULT '남자친구 모드 (조회 전용)';
+-- ALTER TABLE public.praise_boards ADD COLUMN IF NOT EXISTS editor_role_name TEXT DEFAULT '여자친구 모드 (부착 가능)';
 
 -- 기존 테이블에 memo 컬럼 추가가 필요한 경우 실행할 쿼리:
 -- ALTER TABLE public.praise_stickers ADD COLUMN IF NOT EXISTS memo TEXT;
