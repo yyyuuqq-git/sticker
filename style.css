@@ -46,7 +46,8 @@ body {
 .app-container {
     width: 100%;
     max-width: 480px; /* 스마트폰 가로 크기 제한 */
-    height: 100vh;
+    height: 100vh; /* fallback for older browsers */
+    height: 100dvh; /* 모바일 주소창 높이를 제외한 실제 화면 높이 */
     background-color: var(--stitch-bg-light);
     display: flex;
     flex-direction: column;
