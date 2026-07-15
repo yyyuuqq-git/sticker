@@ -788,6 +788,7 @@ input:disabled {
 
 .sidebar-body {
     flex: 1;
+    min-height: 0; /* flexbox 내부 스크롤이 body 안에서만 발생하도록 제한 */
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -897,6 +898,7 @@ input:disabled {
 
 /* 사이드바 푸터 영역 (역할 좌측, 공유/설정 우측 하단 배치) */
 .sidebar-footer {
+    flex-shrink: 0; /* 항상 하단에 고정, 축소 방지 */
     padding: 14px 16px;
     border-top: 1.5px solid var(--border-color);
     background-color: var(--stitch-card-bg);
