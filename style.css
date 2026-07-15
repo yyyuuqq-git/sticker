@@ -766,7 +766,7 @@ input:disabled {
     display: flex;
     flex-direction: column;
     transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.15s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.05s ease;
 }
 
 .sidebar.open {
