@@ -783,9 +783,9 @@ async function refreshApp() {
     }
 
     // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
-    if (editReaderName) editReaderName.value = currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
-    if (editEditorName) editEditorName.value = currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
-    if (editPin) editPin.value = currentBoard.editor_pin || "";
+    if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
+    if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
+    if (editPin) editPin.value = localStorage.getItem("global_editor_pin") || currentBoard.editor_pin || "";
 
     // 역할 UI 업데이트 (역할 명칭 반영)
     updateRoleUI();
@@ -891,10 +891,13 @@ async function handleSlotLongPress(index, isActive) {
 // 7. 역할 모드 토글 (인증 및 로그아웃)
 // ==========================================
 function updateRoleUI() {
+    const globalReaderName = localStorage.getItem("global_reader_role_name");
+    const globalEditorName = localStorage.getItem("global_editor_role_name");
+
     if (isEditorMode) {
         if (btnToggleRole) btnToggleRole.className = "sidebar-role-btn editor-mode";
         if (roleIcon) roleIcon.textContent = "edit";
-        if (roleText) roleText.textContent = (currentBoard && currentBoard.editor_role_name) || "여자친구 모드 (부착 가능)";
+        if (roleText) roleText.textContent = globalEditorName || (currentBoard && currentBoard.editor_role_name) || "여자친구 모드 (부착 가능)";
 
         // 설정 모달 내 필드 활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = false);
@@ -902,7 +905,7 @@ function updateRoleUI() {
     } else {
         if (btnToggleRole) btnToggleRole.className = "sidebar-role-btn reader-mode";
         if (roleIcon) roleIcon.textContent = "visibility";
-        if (roleText) roleText.textContent = (currentBoard && currentBoard.reader_role_name) || "남자친구 모드 (조회 전용)";
+        if (roleText) roleText.textContent = globalReaderName || (currentBoard && currentBoard.reader_role_name) || "남자친구 모드 (조회 전용)";
 
         // 설정 모달 내 필드 비활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = true);
@@ -932,7 +935,7 @@ function showToast(message) {
 // PIN 번호 확인 처리
 btnPinSubmit.addEventListener("click", () => {
     const pin = inputPin.value;
-    const requiredPin = currentBoard.editor_pin || "";
+    const requiredPin = localStorage.getItem("global_editor_pin") || currentBoard.editor_pin || "";
 
     if (pin === requiredPin) {
         isEditorMode = true;
@@ -1068,11 +1071,19 @@ btnSettingsSave.addEventListener("click", async () => {
     loadingSpinner.classList.remove("hidden");
     modalSettings.classList.add("hidden");
 
+    const newPin = editPin.value.trim();
+    const newReaderName = editReaderName.value.trim();
+    const newEditorName = editEditorName.value.trim();
+
+    localStorage.setItem("global_editor_pin", newPin);
+    localStorage.setItem("global_reader_role_name", newReaderName);
+    localStorage.setItem("global_editor_role_name", newEditorName);
+
     const updated = {
         ...currentBoard,
-        editor_pin: editPin.value.trim() || currentBoard.editor_pin,
-        reader_role_name: editReaderName.value.trim() || "남자친구 모드 (조회 전용)",
-        editor_role_name: editEditorName.value.trim() || "여자친구 모드 (부착 가능)"
+        editor_pin: newPin || currentBoard.editor_pin,
+        reader_role_name: newReaderName || "남자친구 모드 (조회 전용)",
+        editor_role_name: newEditorName || "여자친구 모드 (부착 가능)"
     };
 
     const result = await apiCreateBoard(updated);
