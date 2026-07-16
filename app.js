@@ -29,7 +29,7 @@ if (!isLocalMode) {
 let currentBoardId = localStorage.getItem("current_board_id") || "TEST-COSMIC-BOARD";
 let currentBoard = null;
 let currentStickers = [];
-let isEditorMode = localStorage.getItem(`is_editor_${currentBoardId}`) === "true";
+let isEditorMode = localStorage.getItem("is_editor") === "true";
 let deleteTargetIndex = null;
 let memoTargetIndex = null;
 let editTargetIndex = null;
@@ -213,7 +213,6 @@ async function apiDeleteBoard(boardId) {
     // 1. 로컬 캐시 삭제
     localStorage.removeItem(`board_${boardId}`);
     localStorage.removeItem(`stickers_${boardId}`);
-    localStorage.removeItem(`is_editor_${boardId}`);
 
     if (isLocalMode || !supabaseClient) {
         return true;
@@ -552,7 +551,7 @@ function createBoardItemDOM(board, isLocal) {
     const item = document.createElement("div");
     item.className = `board-item ${isActive ? "active" : ""}`;
     
-    const hasPermission = localStorage.getItem(`is_editor_${board.id}`) === "true";
+    const hasPermission = localStorage.getItem("is_editor") === "true";
 
     // 나의 칭찬판 목록이며 + 동시에 해당 보드의 편집 권한(여자친구 PIN)을 갖고 있을 때만 삭제(휴지통) 아이콘 노출
     const deleteButtonHtml = (isLocal && hasPermission) ? `
@@ -579,7 +578,7 @@ function createBoardItemDOM(board, isLocal) {
         
         currentBoardId = board.id;
         localStorage.setItem("current_board_id", currentBoardId);
-        isEditorMode = localStorage.getItem(`is_editor_${board.id}`) === "true"; // 해당 보드의 기존 인증 상태 복원
+        isEditorMode = localStorage.getItem("is_editor") === "true"; // 해당 보드의 기존 인증 상태 복원
         updateRoleUI();
         await refreshApp();
         
@@ -937,7 +936,7 @@ btnPinSubmit.addEventListener("click", () => {
 
     if (pin === requiredPin) {
         isEditorMode = true;
-        localStorage.setItem(`is_editor_${currentBoardId}`, "true"); // 로컬스토리지에 인증 승인 기록
+        localStorage.setItem("is_editor", "true"); // 로컬스토리지에 인증 승인 기록
         inputPin.value = "";
         pinError.classList.add("hidden");
         modalPin.classList.add("hidden");
@@ -959,7 +958,7 @@ btnPinCancel.addEventListener("click", () => {
 btnToggleRole.addEventListener("click", () => {
     if (isEditorMode) {
         isEditorMode = false;
-        localStorage.removeItem(`is_editor_${currentBoardId}`); // 로그아웃 시 인증 승인 기록 삭제
+        localStorage.removeItem("is_editor"); // 로그아웃 시 인증 승인 기록 삭제
         updateRoleUI();
         refreshApp();
         showToast("조회 전용 모드로 복귀했습니다.");
@@ -1012,7 +1011,7 @@ btnCreateBoard.addEventListener("click", async () => {
     if (result.success) {
         currentBoardId = finalCode;
         localStorage.setItem("current_board_id", finalCode);
-        localStorage.setItem(`is_editor_${finalCode}`, "true");
+        localStorage.setItem("is_editor", "true");
         inputCreateBoardTitle.value = "";
         isEditorMode = true;
         updateRoleUI();
@@ -1254,7 +1253,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             const cleaned = boards.filter(b => {
                 const isCurrent = b.id === currentBoardId || b.id === activeParamId;
-                const hasPermission = localStorage.getItem(`is_editor_${b.id}`) === "true";
+                const hasPermission = localStorage.getItem("is_editor") === "true";
                 const isNotTestBoard = !b.id.startsWith("TEST-"); // 내 개설판(BON_WOOK 등) 보존
                 
                 return isCurrent || hasPermission || isNotTestBoard;
@@ -1359,7 +1358,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (result.success) {
             currentBoardId = code;
             localStorage.setItem("current_board_id", code);
-            localStorage.setItem(`is_editor_${code}`, "true");
+            localStorage.setItem("is_editor", "true");
             isEditorMode = true;
             updateRoleUI();
             await refreshApp();
