@@ -182,7 +182,9 @@ async function apiCreateBoard(board) {
                 title: board.title,
                 target_count: board.target_count,
                 reward_text: board.reward_text,
-                editor_pin: board.editor_pin || "1234"
+                editor_pin: board.editor_pin || "1234",
+                reader_role_name: board.reader_role_name || "남자친구 모드 (조회 전용)",
+                editor_role_name: board.editor_role_name || "여자친구 모드 (부착 가능)"
             };
             if (board.created_at) {
                 dbBoard.created_at = board.created_at;
@@ -794,6 +796,9 @@ async function refreshApp() {
     if (editReaderName) editReaderName.value = currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
     if (editEditorName) editEditorName.value = currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
     if (editPin) editPin.value = currentBoard.editor_pin || "";
+
+    // 역할 UI 업데이트 (역할 명칭 반영)
+    updateRoleUI();
 
     // 로딩 종료 및 컨텐츠 표출
     loadingSpinner.classList.add("hidden");
