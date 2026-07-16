@@ -146,9 +146,16 @@ async function apiGetBoard(boardId) {
                 .maybeSingle();
             if (error) throw error;
             if (data) {
-                // 로컬 캐시 업데이트
-                localStorage.setItem(`board_${boardId}`, JSON.stringify(data));
-                return data;
+                // 기존 캐시된 데이터와 병합하여 로컬 전용 설정(역할 이름 등) 보존
+                const cached = localStorage.getItem(`board_${boardId}`);
+                let mergedData = { ...data };
+                if (cached) {
+                    const cachedObj = JSON.parse(cached);
+                    mergedData.reader_role_name = data.reader_role_name || cachedObj.reader_role_name;
+                    mergedData.editor_role_name = data.editor_role_name || cachedObj.editor_role_name;
+                }
+                localStorage.setItem(`board_${boardId}`, JSON.stringify(mergedData));
+                return mergedData;
             }
             return null;
         } catch (e) {
@@ -162,27 +169,41 @@ async function apiGetBoard(boardId) {
 
 // 보드 생성 또는 수정
 async function apiCreateBoard(board) {
+    // 로컬 캐시에는 전체 board 객체를 항상 저장 (역할명 등 로컬 전용 필드 포함)
+    localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
+
     if (isLocalMode || !supabaseClient) {
-        localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
-        return true;
+        return { success: true };
     } else {
         try {
+            // Supabase praise_boards 스키마에 존재하는 컬럼만 추출하여 전송
+            const dbBoard = {
+                id: board.id,
+                title: board.title,
+                target_count: board.target_count,
+                reward_text: board.reward_text,
+                editor_pin: board.editor_pin || "1234"
+            };
+            if (board.created_at) {
+                dbBoard.created_at = board.created_at;
+            }
+
+            console.log("Supabase upsert 요청 데이터:", dbBoard);
             const { error } = await supabaseClient
                 .from("praise_boards")
-                .upsert(board);
+                .upsert(dbBoard);
+
             if (error) {
-                // 컬럼 부재 등 데이터베이스 매칭 실패 시 임시 로컬 캐시로 세이브 처리 우회 (방어적 코딩)
-                console.warn("Supabase 칭찬판 저장 중 에러가 발생하여 로컬 브라우저 캐시에 우선 임시 저장합니다. DDL 마이그레이션이 요구됩니다.", error);
-                localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
-                return true;
+                const errMsg = `[${error.code || 'unknown'}] ${error.message || JSON.stringify(error)}`;
+                console.error("Supabase 칭찬판 저장 실패:", errMsg, error);
+                return { success: false, error: errMsg };
             }
-            localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
-            return true;
+            console.log("Supabase 칭찬판 저장 성공");
+            return { success: true };
         } catch (e) {
-            console.error("보드 생성/수정 실패", e);
-            // 캐시 보존 fallback
-            localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
-            return true;
+            const errMsg = e.message || String(e);
+            console.error("보드 생성/수정 중 예외 발생:", errMsg, e);
+            return { success: false, error: errMsg };
         }
     }
 }
@@ -428,11 +449,12 @@ async function apiUpdateBoardTitle(boardId, newTitle) {
     if (!board) return false;
     
     board.title = newTitle;
-    const success = await apiCreateBoard(board);
-    if (success) {
+    const result = await apiCreateBoard(board);
+    if (result.success) {
         addRegisteredBoard(boardId, newTitle);
         return true;
     }
+    console.error("보드 이름 수정 실패:", result.error);
     return false;
 }
 
@@ -990,19 +1012,19 @@ btnCreateBoard.addEventListener("click", async () => {
         editor_pin: currentBoard ? currentBoard.editor_pin : "1234"
     };
 
-    const success = await apiCreateBoard(newBoard);
-    if (success) {
+    const result = await apiCreateBoard(newBoard);
+    if (result.success) {
         currentBoardId = finalCode;
         localStorage.setItem("current_board_id", finalCode);
-        localStorage.setItem(`is_editor_${finalCode}`, "true"); // 신규 생성 시 즉시 자동 로그인 세션 등록
-        inputCreateBoardTitle.value = ""; // 입력창 초기화
-        isEditorMode = true; // 새로 만든 판은 즉시 편집자 권한 부여
+        localStorage.setItem(`is_editor_${finalCode}`, "true");
+        inputCreateBoardTitle.value = "";
+        isEditorMode = true;
         updateRoleUI();
         await refreshApp();
         
         showToast("새 칭찬판이 생성되었습니다! 🚀");
     } else {
-        showToast("칭찬판 개설에 실패했습니다.");
+        showToast(`칭찬판 개설 실패: ${result.error}`);
         loadingSpinner.classList.add("hidden");
         modalShare.classList.remove("hidden");
     }
@@ -1058,15 +1080,15 @@ btnSettingsSave.addEventListener("click", async () => {
         editor_role_name: editEditorName.value.trim() || "여자친구 모드 (부착 가능)"
     };
 
-    const success = await apiCreateBoard(updated);
-    if (success) {
-        currentBoard = updated;
-        await refreshApp();
+    const result = await apiCreateBoard(updated);
+    // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
+    currentBoard = updated;
+    await refreshApp();
+
+    if (result.success) {
         showToast("칭찬판 보안 및 라벨 설정이 변경되었습니다. ✨");
     } else {
-        showToast("설정 저장에 실패했습니다.");
-        loadingSpinner.classList.add("hidden");
-        modalSettings.classList.remove("hidden");
+        showToast(`⚠️ 서버 저장 실패: ${result.error}`);
     }
 });
 
@@ -1092,25 +1114,24 @@ btnBoardEditSave.addEventListener("click", async () => {
         reward_text: editBoardReward.value.trim()
     };
 
-    const success = await apiCreateBoard(updatedBoard);
-    if (success) {
-        // 로컬 레지스트리 목록 캐시 이름 갱신
-        addRegisteredBoard(editTargetBoard.id, updatedBoard.title);
+    const result = await apiCreateBoard(updatedBoard);
+    // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
+    addRegisteredBoard(editTargetBoard.id, updatedBoard.title);
 
-        if (editTargetBoard.id === currentBoardId) {
-            currentBoard = updatedBoard;
-            await refreshApp();
-        } else {
-            renderBoardList();
-            loadingSpinner.classList.add("hidden");
-        }
-        showToast("칭찬판이 성공적으로 수정되었습니다! ✨");
-        editTargetBoard = null;
+    if (editTargetBoard.id === currentBoardId) {
+        currentBoard = updatedBoard;
+        await refreshApp();
     } else {
-        showToast("설정 저장에 실패했습니다.");
+        renderBoardList();
         loadingSpinner.classList.add("hidden");
-        if (modalBoardEdit) modalBoardEdit.classList.remove("hidden");
     }
+
+    if (result.success) {
+        showToast("칭찬판이 성공적으로 수정되었습니다! ✨");
+    } else {
+        showToast(`⚠️ 서버 저장 실패: ${result.error}`);
+    }
+    editTargetBoard = null;
 });
 
 btnBoardEditClose.addEventListener("click", () => {
@@ -1338,22 +1359,20 @@ document.addEventListener("DOMContentLoaded", () => {
             editor_pin: pin
         };
 
-        const success = await apiCreateBoard(newBoard);
-        if (success) {
+        const result = await apiCreateBoard(newBoard);
+        if (result.success) {
             currentBoardId = code;
             localStorage.setItem("current_board_id", code);
-            localStorage.setItem(`is_editor_${code}`, "true"); // 최초 개설 시 로컬에 자동 로그인 세션 활성화
-            // 생성 시에는 자동으로 편집자 모드 승인
+            localStorage.setItem(`is_editor_${code}`, "true");
             isEditorMode = true;
             updateRoleUI();
             await refreshApp();
             showToast("칭찬판이 성공적으로 개설되었습니다! 🚀");
             
-            // 브라우저 주소창 URL 업데이트
             const newUrl = `${window.location.origin}${window.location.pathname}?board=${code}`;
             window.history.replaceState({ path: newUrl }, "", newUrl);
         } else {
-            showToast("칭찬판 개설에 실패했습니다.");
+            showToast(`칭찬판 개설 실패: ${result.error}`);
             welcomeScreen.classList.remove("hidden");
             loadingSpinner.classList.add("hidden");
         }
