@@ -363,16 +363,16 @@ async function apiRemoveSticker(boardId, index) {
 // 5. 3D 해양생물 에폭시 스티커 10종 빌더
 // ==========================================
 const SEA_CREATURES = [
-    { id: 0, name: "흰수염고래 🐳", emoji: "🐳" },
-    { id: 1, name: "아기 돌고래 🐬", emoji: "🐬" },
-    { id: 2, name: "장수거북이 🐢", emoji: "🐢" },
-    { id: 3, name: "대왕문어 🐙", emoji: "🐙" },
-    { id: 4, name: "귀요미 꽃게 🦀", emoji: "🦀" },
-    { id: 5, name: "반짝 해파리 🪼", emoji: "🪼" },
-    { id: 6, name: "진주 조개 🐚", emoji: "🐚" },
-    { id: 7, name: "니모 열대어 🐠", emoji: "🐠" },
-    { id: 8, name: "무지개 불가사리 ⭐️", emoji: "⭐️" },
-    { id: 9, name: "황제 펭귄 🐧", emoji: "🐧" }
+    { id: 0, name: "흰수염고래", emoji: "🐳" },
+    { id: 1, name: "아기 돌고래", emoji: "🐬" },
+    { id: 2, name: "장수거북이", emoji: "🐢" },
+    { id: 3, name: "대왕문어", emoji: "🐙" },
+    { id: 4, name: "귀요미 꽃게", emoji: "🦀" },
+    { id: 5, name: "반짝 해파리", emoji: "🪼" },
+    { id: 6, name: "진주 조개", emoji: "🐚" },
+    { id: 7, name: "니모 열대어", emoji: "🐠" },
+    { id: 8, name: "무지개 불가사리", emoji: "⭐️" },
+    { id: 9, name: "황제 펭귄", emoji: "🐧" }
 ];
 
 let selectedStickerType = 0;
@@ -606,13 +606,7 @@ function getCosmicStickerSvg(index, isSticker, rawMemo = "") {
     const type = (parsed.type !== null && parsed.type >= 0 && parsed.type < 10) ? parsed.type : (index % 10);
     
     if (!isSticker) {
-        return `
-            <svg viewBox="0 0 100 100" class="sea-sticker-svg placeholder" style="opacity: 0.35;">
-                <g filter="grayscale(30%)">
-                    ${getSeaCreatureGraphic(type)}
-                </g>
-            </svg>
-        `;
+        return "";
     }
     return `
         <svg viewBox="0 0 100 100" class="sea-sticker-svg active">
@@ -1058,36 +1052,26 @@ function createBoardItemDOM(board, isLocal) {
 
         btnEdit.addEventListener("click", (e) => {
             e.stopPropagation();
-    item.addEventListener("touchmove", cancelPress, { passive: true });
+            e.preventDefault();
+            openBoardEditModal(board);
+        });
+    }
 
-    // 3. 삭제 버튼 클릭 (완전 삭제 - 편집 권한 보유 시에만 작동)
     if (isLocal && hasPermission) {
         const btnDelete = item.querySelector(".btn-delete-board");
         if (btnDelete) {
-            btnDelete.addEventListener("click", async (e) => {
+            btnDelete.addEventListener("mousedown", (e) => e.stopPropagation());
+            btnDelete.addEventListener("mouseup", (e) => e.stopPropagation());
+            btnDelete.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+            btnDelete.addEventListener("touchend", (e) => e.stopPropagation(), { passive: true });
+
+            btnDelete.addEventListener("click", (e) => {
                 e.stopPropagation();
-                if (confirm(`'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 등록된 스티커 목록이 모두 영구적으로 삭제됩니다.)`)) {
-                    loadingSpinner.classList.remove("hidden");
-                    const wasActive = board.id === currentBoardId;
-                    
-                    // 실제 데이터 삭제 API 호출
-                    await apiDeleteBoard(board.id);
-                    
-                    // 로컬 기기 리스트에서 제외
-                    removeRegisteredBoard(board.id);
-                    
-                    if (wasActive) {
-                        sidebar.classList.remove("open");
-                        sidebarOverlay.classList.add("hidden");
-                        const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
-                        window.history.replaceState({ path: newUrl }, "", newUrl);
-                        await refreshApp();
-                    } else {
-                        renderBoardList();
-                        loadingSpinner.classList.add("hidden");
-                    }
-                    showToast("스티커판이 완전히 삭제되었습니다.");
-                }
+                e.preventDefault();
+                deleteTargetBoardId = board.id;
+                deleteTargetIndex = null;
+                deleteConfirmText.textContent = `'${board.title}' 판을 삭제하시겠습니까?\n(실제 데이터와 스티커가 모두 영구 삭제됩니다.)`;
+                modalDelete.classList.remove("hidden");
             });
         }
     }
@@ -1104,6 +1088,20 @@ async function refreshApp() {
     try {
         // 1. 보드 정보 로드
         let board = await apiGetBoard(currentBoardId);
+        if (!board) {
+            const registered = getRegisteredBoards();
+            if (registered.length > 0) {
+                currentBoardId = registered[0].id;
+                localStorage.setItem("current_board_id", currentBoardId);
+                board = await apiGetBoard(currentBoardId);
+            }
+        }
+        if (!board && (currentBoardId === "DEFAULT" || !currentBoardId)) {
+            currentBoardId = "TEST-COSMIC-BOARD";
+            localStorage.setItem("current_board_id", currentBoardId);
+            board = await apiGetBoard(currentBoardId);
+        }
+
         if (!board) {
             // 보드가 존재하지 않음 -> 초기 설정 화면 노출
             appContent.classList.add("hidden");
