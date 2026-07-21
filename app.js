@@ -25,8 +25,22 @@ if (!isLocalMode) {
     console.log("Supabase 설정이 비어있어 '로컬 모드(기기 브라우저 저장)'로 구동됩니다.");
 }
 
-// 2. 앱 전역 상태 관리
-let currentBoardId = localStorage.getItem("current_board_id") || "TEST-COSMIC-BOARD";
+// 달 칭찬스티커 전용 보드 판별 (채소가게 보드 및 테스트 보드 자동 제외)
+function isMoonBoard(b) {
+    if (!b) return false;
+    const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
+    const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
+    if (idStr.startsWith("TEST-BOARD-") || idStr === "TEST-BOARD") return false;
+    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || titleStr.includes("채소")) return false;
+    return true;
+}
+
+let initialBoardId = localStorage.getItem("current_board_id");
+if (initialBoardId && !isMoonBoard(initialBoardId)) {
+    initialBoardId = "TEST-COSMIC-BOARD";
+    localStorage.setItem("current_board_id", initialBoardId);
+}
+let currentBoardId = initialBoardId || "TEST-COSMIC-BOARD";
 let currentBoard = null;
 let currentStickers = [];
 let isEditorMode = localStorage.getItem("is_editor") === "true";
@@ -395,9 +409,8 @@ function getCosmicStickerSvg(index, isSticker) {
 // 5.5 등록된 보드 목록 관리 및 사이드바 렌더링
 // ==========================================
 
-// 모든 스티커판 목록 조회 (서버 전체 탐색용 - 실이용자 보드 목록만 반환)
+// 모든 스티커판 목록 조회 (서버 전체 탐색용 - 달 칭찬스티커 보드만 반환)
 async function apiGetAllBoards() {
-    const isTestBoard = (b) => b && b.id && (String(b.id).toUpperCase().startsWith("TEST-") || String(b.id).toUpperCase().includes("TEST"));
     if (isLocalMode || !supabaseClient) {
         // 로컬스토리지 전체 키 순회
         const boards = [];
@@ -406,7 +419,7 @@ async function apiGetAllBoards() {
             if (key.startsWith("board_")) {
                 try {
                     const board = JSON.parse(localStorage.getItem(key));
-                    if (board && board.id && !isTestBoard(board)) {
+                    if (board && isMoonBoard(board)) {
                         boards.push(board);
                     }
                 } catch(e){}
@@ -420,7 +433,7 @@ async function apiGetAllBoards() {
                 .select("*")
                 .order("created_at", { ascending: false });
             if (error) throw error;
-            return (data || []).filter(b => !isTestBoard(b));
+            return (data || []).filter(b => isMoonBoard(b));
         } catch (e) {
             console.error("전체 보드 조회 실패", e);
             const boards = [];
@@ -429,7 +442,7 @@ async function apiGetAllBoards() {
                 if (key.startsWith("board_")) {
                     try {
                         const board = JSON.parse(localStorage.getItem(key));
-                        if (board && board.id && !isTestBoard(board)) {
+                        if (board && isMoonBoard(board)) {
                             boards.push(board);
                         }
                     } catch(e){}
@@ -508,7 +521,8 @@ async function handleBoardItemLongPress(board) {
 // 등록된 보드 목록 관리 헬퍼 함수들
 function getRegisteredBoards() {
     const list = localStorage.getItem("registered_boards");
-    return list ? JSON.parse(list) : [];
+    const parsed = list ? JSON.parse(list) : [];
+    return parsed.filter(b => isMoonBoard(b));
 }
 
 function addRegisteredBoard(boardId, title, rewardText) {
