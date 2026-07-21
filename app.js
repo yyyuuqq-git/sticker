@@ -360,50 +360,293 @@ async function apiRemoveSticker(boardId, index) {
 }
 
 // ==========================================
-// 5. 손그림 우주 스티커 SVG 드로잉 빌더
+// 5. 3D 해양생물 에폭시 스티커 10종 빌더
 // ==========================================
-function getShapeMarkup(index, stroke, fill, width) {
-    const type = index % 5;
-    if (type === 0) {
-        // Doodle Star
-        return `<path d="M 50,12 C 51,12 58,34 59,36 C 60,38 84,38 85,40 C 86,42 67,54 68,56 C 69,58 74,80 72,82 C 70,84 51,70 49,70 C 47,70 28,84 26,82 C 24,80 29,58 30,56 C 31,54 12,42 13,40 C 14,38 38,38 39,36 C 40,34 47,12 50,12 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
-    } else if (type === 1) {
-        // Doodle Moon
-        return `<path d="M 64,22 C 45,22 28,36 28,54 C 28,72 45,86 64,86 C 46,81 40,59 51,41 C 56,33 59,27 64,22 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
-    } else if (type === 2) {
-        // Doodle Saturn
-        const backRing = `<path d="M 23,48 C 30,39 70,39 77,48" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        const sphere = `<ellipse cx="50" cy="52" rx="22" ry="18" stroke="${stroke}" fill="${fill}" stroke-width="${width}" />`;
-        const frontRing = `<path d="M 18,52 C 18,59 34,68 50,68 C 66,68 82,59 82,52" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        return backRing + sphere + frontRing;
-    } else if (type === 3) {
-        // Doodle Sparkles
-        const sparkle1 = `<path d="M 40,38 Q 40,54 24,54 Q 40,54 40,70 Q 40,54 56,54 Q 40,54 40,38 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
-        const sparkle2 = `<path d="M 68,18 Q 68,28 58,28 Q 68,28 68,38 Q 68,28 78,28 Q 68,28 68,18 Z" stroke="${stroke}" fill="${fill}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" />`;
-        return sparkle1 + sparkle2;
-    } else {
-        // Doodle Sun
-        const sphere = `<circle cx="50" cy="50" r="18" stroke="${stroke}" fill="${fill}" stroke-width="${width}" />`;
-        const spiral = `<path d="M 50,50 Q 46,45 50,42 Q 55,40 56,46 Q 57,53 48,54 Q 40,55 42,44 Q 44,36 54,36 Q 64,36 62,50 Q 60,60 46,58" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        const rays = `<path d="M 50,22 L 50,13 M 50,78 L 50,87 M 22,50 L 13,50 M 78,50 L 87,50 M 30,30 L 23,23 M 70,70 L 77,77 M 30,70 L 23,77 M 70,30 L 77,23" stroke="${stroke}" fill="none" stroke-width="${width}" stroke-linecap="round" />`;
-        return sphere + spiral + rays;
+const SEA_CREATURES = [
+    { id: 0, name: "흰수염고래 🐳", emoji: "🐳" },
+    { id: 1, name: "아기 돌고래 🐬", emoji: "🐬" },
+    { id: 2, name: "장수거북이 🐢", emoji: "🐢" },
+    { id: 3, name: "대왕문어 🐙", emoji: "🐙" },
+    { id: 4, name: "귀요미 꽃게 🦀", emoji: "🦀" },
+    { id: 5, name: "반짝 해파리 🪼", emoji: "🪼" },
+    { id: 6, name: "진주 조개 🐚", emoji: "🐚" },
+    { id: 7, name: "니모 열대어 🐠", emoji: "🐠" },
+    { id: 8, name: "무지개 불가사리 ⭐️", emoji: "⭐️" },
+    { id: 9, name: "황제 펭귄 🐧", emoji: "🐧" }
+];
+
+let selectedStickerType = 0;
+
+function parseStickerMemo(rawMemo) {
+    if (!rawMemo) return { type: null, memo: "" };
+    const match = String(rawMemo).match(/^\[type:(\d+)\]\s*(.*)/s);
+    if (match) {
+        return { type: parseInt(match[1], 10), memo: match[2] };
+    }
+    return { type: null, memo: rawMemo };
+}
+
+function getSeaCreatureGraphic(type) {
+    switch (type) {
+        case 0: // 🐳 흰수염고래
+            return `
+                <defs>
+                    <radialGradient id="whale-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#60A5FA" />
+                        <stop offset="60%" stop-color="#3B82F6" />
+                        <stop offset="100%" stop-color="#1D4ED8" />
+                    </radialGradient>
+                    <linearGradient id="whale-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" />
+                        <stop offset="100%" stop-color="#DBEAFE" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="2.5" />
+                <path d="M 50 24 Q 46 14 40 16 M 50 24 Q 54 12 62 14" stroke="#60A5FA" stroke-width="3" stroke-linecap="round" fill="none" />
+                <circle cx="40" cy="15" r="2.5" fill="#93C5FD" />
+                <circle cx="62" cy="13" r="2.5" fill="#93C5FD" />
+                <path d="M 20 54 C 20 34 50 32 75 44 C 84 48 88 56 78 62 C 68 68 45 68 25 64 Z" fill="url(#whale-body-${type})" stroke="#1E40AF" stroke-width="1.5" />
+                <path d="M 75 48 C 82 42 88 40 92 46 C 88 52 82 52 75 52 Z" fill="url(#whale-body-${type})" />
+                <path d="M 26 58 C 35 66 60 66 70 60 C 60 67 36 67 26 58 Z" fill="url(#whale-belly-${type})" />
+                <circle cx="36" cy="46" r="3" fill="#1E293B" />
+                <circle cx="37" cy="45" r="1" fill="#FFFFFF" />
+                <path d="M 32 54 Q 38 58 44 54" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round" fill="none" />
+                <ellipse cx="44" cy="52" rx="3.5" ry="2.5" fill="#F472B6" opacity="0.6" />
+            `;
+        case 1: // 🐬 아기 돌고래
+            return `
+                <defs>
+                    <radialGradient id="dol-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#38BDF8" />
+                        <stop offset="70%" stop-color="#0284C7" />
+                        <stop offset="100%" stop-color="#0369A1" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="2.5" />
+                <path d="M 22 56 C 24 32 58 24 78 40 C 84 45 80 52 70 52 C 55 52 35 60 22 56 Z" fill="url(#dol-body-${type})" stroke="#0284C7" stroke-width="1.5" />
+                <path d="M 48 30 Q 56 18 62 28 Z" fill="url(#dol-body-${type})" stroke="#0284C7" stroke-width="1" />
+                <path d="M 22 56 Q 12 50 14 62 Q 20 58 22 56 Z" fill="url(#dol-body-${type})" />
+                <circle cx="68" cy="42" r="3" fill="#0F172A" />
+                <circle cx="69" cy="41" r="1" fill="#FFFFFF" />
+                <ellipse cx="64" cy="47" rx="3" ry="2" fill="#F472B6" opacity="0.7" />
+            `;
+        case 2: // 🐢 장수거북이
+            return `
+                <defs>
+                    <radialGradient id="t-shell-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#34D399" />
+                        <stop offset="70%" stop-color="#10B981" />
+                        <stop offset="100%" stop-color="#047857" />
+                    </radialGradient>
+                    <radialGradient id="t-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#A7F3D0" />
+                        <stop offset="100%" stop-color="#34D399" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="2.5" />
+                <circle cx="70" cy="50" r="11" fill="url(#t-body-${type})" stroke="#059669" stroke-width="1.5" />
+                <ellipse cx="32" cy="28" rx="10" ry="6" fill="url(#t-body-${type})" transform="rotate(-30 32 28)" />
+                <ellipse cx="32" cy="72" rx="10" ry="6" fill="url(#t-body-${type})" transform="rotate(30 32 72)" />
+                <ellipse cx="64" cy="28" rx="8" ry="5" fill="url(#t-body-${type})" transform="rotate(30 64 28)" />
+                <ellipse cx="64" cy="72" rx="8" ry="5" fill="url(#t-body-${type})" transform="rotate(-30 64 72)" />
+                <ellipse cx="46" cy="50" rx="22" ry="20" fill="url(#t-shell-${type})" stroke="#065F46" stroke-width="2" />
+                <path d="M 38 42 L 48 42 L 54 50 L 48 58 L 38 58 L 34 50 Z" stroke="#A7F3D0" fill="none" stroke-width="1.8" />
+                <circle cx="73" cy="47" r="2.5" fill="#064E3B" />
+                <circle cx="74" cy="46" r="0.8" fill="#FFFFFF" />
+            `;
+        case 3: // 🐙 대왕문어
+            return `
+                <defs>
+                    <radialGradient id="octo-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#F472B6" />
+                        <stop offset="70%" stop-color="#EC4899" />
+                        <stop offset="100%" stop-color="#BE185D" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#FDF2F8" stroke="#FBCFE8" stroke-width="2.5" />
+                <path d="M 26 62 Q 20 78 28 80 Q 34 76 34 64" fill="url(#octo-body-${type})" />
+                <path d="M 36 64 Q 34 82 42 82 Q 48 78 46 64" fill="url(#octo-body-${type})" />
+                <path d="M 54 64 Q 52 78 58 82 Q 66 82 64 64" fill="url(#octo-body-${type})" />
+                <path d="M 66 64 Q 66 76 72 80 Q 80 78 74 62" fill="url(#octo-body-${type})" />
+                <circle cx="50" cy="42" r="23" fill="url(#octo-body-${type})" stroke="#9D174D" stroke-width="1.5" />
+                <circle cx="42" cy="40" r="4.5" fill="#0F172A" />
+                <circle cx="44" cy="38" r="1.5" fill="#FFFFFF" />
+                <circle cx="58" cy="40" r="4.5" fill="#0F172A" />
+                <circle cx="60" cy="38" r="1.5" fill="#FFFFFF" />
+                <ellipse cx="50" cy="48" rx="3.5" ry="4" fill="#831843" />
+                <ellipse cx="36" cy="46" rx="4" ry="2.5" fill="#FBCFE8" opacity="0.8" />
+                <ellipse cx="64" cy="46" rx="4" ry="2.5" fill="#FBCFE8" opacity="0.8" />
+            `;
+        case 4: // 🦀 귀요미 꽃게
+            return `
+                <defs>
+                    <radialGradient id="crab-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#F87171" />
+                        <stop offset="70%" stop-color="#EF4444" />
+                        <stop offset="100%" stop-color="#B91C1C" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2.5" />
+                <path d="M 24 55 Q 12 52 16 68 M 26 62 Q 16 64 20 76 M 76 55 Q 88 52 84 68 M 74 62 Q 84 64 80 76" stroke="#DC2626" stroke-width="3.5" stroke-linecap="round" fill="none" />
+                <path d="M 28 40 Q 16 32 18 22 Q 28 20 30 32 Z" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.2" />
+                <path d="M 72 40 Q 84 32 82 22 Q 72 20 70 32 Z" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.2" />
+                <ellipse cx="50" cy="54" rx="24" ry="17" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.8" />
+                <circle cx="42" cy="34" r="4.5" fill="#FFFFFF" stroke="#991B1B" stroke-width="1.5" />
+                <circle cx="42" cy="34" r="2" fill="#0F172A" />
+                <circle cx="58" cy="34" r="4.5" fill="#FFFFFF" stroke="#991B1B" stroke-width="1.5" />
+                <circle cx="58" cy="34" r="2" fill="#0F172A" />
+                <path d="M 44 58 Q 50 64 56 58" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" />
+            `;
+        case 5: // 🪼 반짝 해파리
+            return `
+                <defs>
+                    <radialGradient id="jelly-cap-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#E9D5FF" />
+                        <stop offset="60%" stop-color="#C084FC" />
+                        <stop offset="100%" stop-color="#7E22CE" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="2.5" />
+                <path d="M 32 54 Q 28 68 34 82 M 41 56 Q 47 70 41 82 M 50 56 Q 44 70 50 82 M 59 56 Q 65 70 59 82 M 68 54 Q 64 68 70 82" stroke="#A855F7" stroke-width="2.5" stroke-linecap="round" fill="none" />
+                <path d="M 22 52 C 22 28 78 28 78 52 C 68 56 60 48 50 54 C 40 48 32 56 22 52 Z" fill="url(#jelly-cap-${type})" stroke="#6B21A8" stroke-width="1.5" />
+                <circle cx="42" cy="42" r="3" fill="#3B0764" />
+                <circle cx="43" cy="41" r="1" fill="#FFFFFF" />
+                <circle cx="58" cy="42" r="3" fill="#3B0764" />
+                <circle cx="59" cy="41" r="1" fill="#FFFFFF" />
+                <ellipse cx="36" cy="46" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
+                <ellipse cx="64" cy="46" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
+            `;
+        case 6: // 🐚 핑크 진주조개
+            return `
+                <defs>
+                    <radialGradient id="shell-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#F472B6" />
+                        <stop offset="70%" stop-color="#DB2777" />
+                        <stop offset="100%" stop-color="#9D174D" />
+                    </radialGradient>
+                    <radialGradient id="pearl-grad-${type}" cx="30%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#FFFFFF" />
+                        <stop offset="60%" stop-color="#FDE047" />
+                        <stop offset="100%" stop-color="#F59E0B" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#FFF1F2" stroke="#FECDD3" stroke-width="2.5" />
+                <path d="M 20 54 C 20 78 80 78 80 54 Z" fill="url(#shell-body-${type})" stroke="#831843" stroke-width="1.8" />
+                <path d="M 20 54 C 20 24 80 24 80 54 Q 50 42 20 54 Z" fill="url(#shell-body-${type})" stroke="#831843" stroke-width="1.8" />
+                <path d="M 35 50 Q 50 30 65 50 M 42 51 Q 50 32 58 51" stroke="#FBCFE8" stroke-width="1.5" stroke-linecap="round" fill="none" />
+                <circle cx="50" cy="56" r="10" fill="url(#pearl-grad-${type})" stroke="#CA8A04" stroke-width="1" />
+                <circle cx="47" cy="53" r="3" fill="#FFFFFF" opacity="0.9" />
+            `;
+        case 7: // 🐠 니모 열대어
+            return `
+                <defs>
+                    <radialGradient id="fish-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#FB923C" />
+                        <stop offset="70%" stop-color="#F97316" />
+                        <stop offset="100%" stop-color="#C2410C" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#FFF7ED" stroke="#FFEDD5" stroke-width="2.5" />
+                <path d="M 72 50 L 88 36 L 84 50 L 88 64 Z" fill="url(#fish-body-${type})" stroke="#9A3412" stroke-width="1.5" />
+                <ellipse cx="46" cy="50" rx="28" ry="20" fill="url(#fish-body-${type})" stroke="#9A3412" stroke-width="1.8" />
+                <path d="M 40 31 C 44 38 44 62 40 69 C 45 69 49 61 47 31 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1" />
+                <path d="M 58 35 C 61 42 61 58 58 65 C 62 65 65 58 63 35 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1" />
+                <circle cx="28" cy="46" r="3.5" fill="#0F172A" />
+                <circle cx="29" cy="45" r="1.2" fill="#FFFFFF" />
+                <path d="M 20 52 Q 24 54 20 56" stroke="#9A3412" stroke-width="2" stroke-linecap="round" fill="none" />
+            `;
+        case 8: // ⭐️ 무지개 불가사리
+            return `
+                <defs>
+                    <radialGradient id="star-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#FDE047" />
+                        <stop offset="70%" stop-color="#F59E0B" />
+                        <stop offset="100%" stop-color="#D97706" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#FEFCE8" stroke="#FEF08A" stroke-width="2.5" />
+                <path d="M 50 14 L 61 38 L 86 38 L 66 54 L 73 78 L 50 63 L 27 78 L 34 54 L 14 38 L 39 38 Z" fill="url(#star-body-${type})" stroke="#B45309" stroke-width="2" stroke-linejoin="round" />
+                <circle cx="43" cy="45" r="3" fill="#0F172A" />
+                <circle cx="44" cy="44" r="1" fill="#FFFFFF" />
+                <circle cx="57" cy="45" r="3" fill="#0F172A" />
+                <circle cx="58" cy="44" r="1" fill="#FFFFFF" />
+                <path d="M 46 51 Q 50 56 54 51" stroke="#78350F" stroke-width="2" stroke-linecap="round" fill="none" />
+                <circle cx="37" cy="49" r="2.5" fill="#F472B6" opacity="0.8" />
+                <circle cx="63" cy="49" r="2.5" fill="#F472B6" opacity="0.8" />
+            `;
+        case 9: // 🐧 황제 펭귄
+            return `
+                <defs>
+                    <radialGradient id="pen-body-${type}" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#334155" />
+                        <stop offset="70%" stop-color="#1E293B" />
+                        <stop offset="100%" stop-color="#0F172A" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2.5" />
+                <ellipse cx="42" cy="80" rx="6" ry="3" fill="#F59E0B" />
+                <ellipse cx="58" cy="80" rx="6" ry="3" fill="#F59E0B" />
+                <ellipse cx="26" cy="56" rx="6" ry="14" fill="url(#pen-body-${type})" transform="rotate(20 26 56)" />
+                <ellipse cx="74" cy="56" rx="6" ry="14" fill="url(#pen-body-${type})" transform="rotate(-20 74 56)" />
+                <ellipse cx="50" cy="50" rx="22" ry="28" fill="url(#pen-body-${type})" />
+                <ellipse cx="50" cy="54" rx="15" ry="21" fill="#FFFFFF" />
+                <circle cx="43" cy="36" r="2.5" fill="#0F172A" />
+                <circle cx="44" cy="35" r="0.8" fill="#FFFFFF" />
+                <circle cx="57" cy="36" r="2.5" fill="#0F172A" />
+                <circle cx="58" cy="35" r="0.8" fill="#FFFFFF" />
+                <path d="M 50 38 L 45 44 L 55 44 Z" fill="#F59E0B" />
+            `;
+        default:
+            return "";
     }
 }
 
-function getCosmicStickerSvg(index, isSticker) {
+function getCosmicStickerSvg(index, isSticker, rawMemo = "") {
+    const parsed = parseStickerMemo(rawMemo);
+    const type = (parsed.type !== null && parsed.type >= 0 && parsed.type < 10) ? parsed.type : (index % 10);
+    
     if (!isSticker) {
         return `
-            <svg viewBox="0 0 100 100" class="sticker-svg" style="opacity: 0.22; filter: none;">
-                ${getShapeMarkup(index, "#718096", "none", 3)}
+            <svg viewBox="0 0 100 100" class="sea-sticker-svg placeholder" style="opacity: 0.35;">
+                <g filter="grayscale(30%)">
+                    ${getSeaCreatureGraphic(type)}
+                </g>
             </svg>
         `;
     }
     return `
-        <svg viewBox="0 0 100 100" class="sticker-svg">
-            ${getShapeMarkup(index, "white", "white", 14)}
-            ${getShapeMarkup(index, "#2D3748", "white", 4.5)}
+        <svg viewBox="0 0 100 100" class="sea-sticker-svg active">
+            ${getSeaCreatureGraphic(type)}
         </svg>
     `;
+}
+
+function renderStickerPickerGrid() {
+    const gridContainer = document.getElementById("sticker-select-grid");
+    if (!gridContainer) return;
+    gridContainer.innerHTML = "";
+    
+    SEA_CREATURES.forEach(creature => {
+        const isSel = creature.id === selectedStickerType;
+        const item = document.createElement("div");
+        item.className = `sticker-option-item ${isSel ? "selected" : ""}`;
+        item.innerHTML = `
+            <div class="sticker-option-icon">
+                <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
+                    ${getSeaCreatureGraphic(creature.id)}
+                </svg>
+            </div>
+            <span class="sticker-option-label">${creature.name}</span>
+        `;
+        
+        item.addEventListener("click", () => {
+            selectedStickerType = creature.id;
+            document.querySelectorAll(".sticker-option-item").forEach(el => el.classList.remove("selected"));
+            item.classList.add("selected");
+        });
+        
+        gridContainer.appendChild(item);
+    });
 }
 
 // ==========================================
@@ -1031,7 +1274,10 @@ async function handleSlotClick(index, isActive) {
         // 이미 붙은 스티커 클릭 시: 메모 모달창 노출
         editTargetIndex = index;
         const sticker = currentStickers.find(s => s.sticker_index === index);
-        const memoText = sticker && sticker.memo ? sticker.memo : "등록된 칭찬 메모가 없습니다. 🧸";
+        const rawMemo = sticker && sticker.memo ? sticker.memo : "";
+        const parsed = parseStickerMemo(rawMemo);
+        
+        const displayMemoText = parsed.memo ? parsed.memo : "등록된 칭찬 메모가 없습니다. 🧸";
         const createdDate = sticker && sticker.created_at ? formatDate(sticker.created_at) : "";
         const updatedDate = sticker && sticker.updated_at ? formatDate(sticker.updated_at) : "";
 
@@ -1040,17 +1286,7 @@ async function handleSlotClick(index, isActive) {
         const updatedTime = sticker && sticker.updated_at ? new Date(sticker.updated_at).getTime() : 0;
         const isModified = createdTime && updatedTime && Math.abs(updatedTime - createdTime) > 5000;
 
-        console.log("Sticker click debug details:", {
-            sticker,
-            createdTime,
-            updatedTime,
-            timeDiffMs: Math.abs(updatedTime - createdTime),
-            isModified,
-            createdDate,
-            updatedDate
-        });
-
-        viewStickerMemoText.textContent = memoText;
+        viewStickerMemoText.textContent = displayMemoText;
         viewStickerCreatedAt.textContent = createdDate ? `최초 작성: ${createdDate}` : "";
         
         if (updatedDate && isModified) {
@@ -1076,13 +1312,17 @@ async function handleSlotClick(index, isActive) {
 
         modalMemoView.classList.remove("hidden");
     } else {
-        // 빈칸 클릭 시: 편집자만 메모 작성 모달 노출 후 부착
+        // 빈칸 클릭 시: 편집자만 스티커 선택 & 메모 작성 모달 노출
         if (!isEditorMode) {
             showToast("스티커 추가는 여자친구(편집자)만 가능해요! 🧸");
             return;
         }
         memoTargetIndex = index;
+        selectedStickerType = index % 10; // 기본 선택 스티커
         inputStickerMemo.value = "";
+        
+        renderStickerPickerGrid();
+        
         modalMemoInput.classList.remove("hidden");
         inputStickerMemo.focus();
     }
@@ -1379,13 +1619,15 @@ btnDeleteCancel.addEventListener("click", () => {
 btnMemoSubmit.addEventListener("click", async () => {
     if (memoTargetIndex === null) return;
     const memoText = inputStickerMemo.value.trim();
+    const formattedMemo = `[type:${selectedStickerType}] ${memoText}`;
 
     loadingSpinner.classList.remove("hidden");
     modalMemoInput.classList.add("hidden");
 
-    const success = await apiAddSticker(currentBoardId, memoTargetIndex, memoText);
+    const success = await apiAddSticker(currentBoardId, memoTargetIndex, formattedMemo);
     if (success) {
-        showToast(`${memoTargetIndex + 1}번째 스티커 부착 완료! 💙`);
+        const creatureName = SEA_CREATURES[selectedStickerType] ? SEA_CREATURES[selectedStickerType].name : "해양생물";
+        showToast(`${memoTargetIndex + 1}번째 칸에 ${creatureName} 스티커 부착 완료! 🌊💙`);
         memoTargetIndex = null;
         await refreshApp();
     } else {
@@ -1409,7 +1651,8 @@ btnMemoViewClose.addEventListener("click", () => {
 btnMemoEditStart.addEventListener("click", () => {
     if (editTargetIndex === null) return;
     const sticker = currentStickers.find(s => s.sticker_index === editTargetIndex);
-    inputEditStickerMemo.value = sticker && sticker.memo ? sticker.memo : "";
+    const parsed = parseStickerMemo(sticker && sticker.memo ? sticker.memo : "");
+    inputEditStickerMemo.value = parsed.memo;
     
     // UI 전환
     document.querySelector("#modal-memo-view .memo-view-content").classList.add("hidden");
@@ -1439,10 +1682,15 @@ btnMemoEditSave.addEventListener("click", async () => {
     if (editTargetIndex === null) return;
     const newMemoText = inputEditStickerMemo.value.trim();
     
+    const sticker = currentStickers.find(s => s.sticker_index === editTargetIndex);
+    const parsed = parseStickerMemo(sticker ? sticker.memo : "");
+    const keepType = parsed.type !== null ? parsed.type : (editTargetIndex % 10);
+    const formattedMemo = `[type:${keepType}] ${newMemoText}`;
+
     loadingSpinner.classList.remove("hidden");
     modalMemoView.classList.add("hidden");
     
-    const success = await apiUpdateStickerMemo(currentBoardId, editTargetIndex, newMemoText);
+    const success = await apiUpdateStickerMemo(currentBoardId, editTargetIndex, formattedMemo);
     if (success) {
         showToast("칭찬 메모가 수정되었습니다. ✨");
         editTargetIndex = null;

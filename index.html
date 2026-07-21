@@ -242,17 +242,24 @@
         </div>
     </div>
 
-    <!-- E. 칭찬 스티커 메모 입력 모달 -->
+    <!-- E. 3D 해양생물 스티커 선택 & 메모 작성 모달 -->
     <div id="modal-memo-input" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3 class="modal-title">칭찬 한마디 작성하기 ✍️</h3>
-            <p class="modal-desc">어떤 이유로 칭찬 스티커를 붙이는지 메모를 남겨주세요.</p>
-            <div class="form-group">
-                <textarea id="input-sticker-memo" placeholder="예: 오늘도 집안일을 도와줘서 고마워! 💕" rows="3" class="memo-textarea" maxlength="200"></textarea>
+        <div class="modal-content scrollable" style="max-width: 440px;">
+            <h3 class="modal-title">🌊 3D 해양생물 스티커 선택</h3>
+            <p class="modal-desc">붙이고 싶은 귀여운 해양생물 스티커를 선택해 주세요!</p>
+            
+            <!-- 스티커 선택 그리드 -->
+            <div id="sticker-select-grid" class="sticker-select-grid">
+                <!-- 자바스크립트로 10종 3D 스티커 아이템 동적 생성 -->
             </div>
-            <div class="modal-actions">
+
+            <div class="form-group" style="margin-top: 14px;">
+                <label for="input-sticker-memo" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">✍️ 칭찬 한마디 남기기</label>
+                <textarea id="input-sticker-memo" placeholder="예: 오늘도 고생 많았어! 사랑해 💕" rows="2" class="memo-textarea" maxlength="200"></textarea>
+            </div>
+            <div class="modal-actions" style="margin-top: 16px;">
                 <button id="btn-memo-cancel" class="btn btn-secondary">취소</button>
-                <button id="btn-memo-submit" class="btn btn-primary">붙이기 🚀</button>
+                <button id="btn-memo-submit" class="btn btn-primary">스티커 붙이기 🚀</button>
             </div>
         </div>
     </div>
