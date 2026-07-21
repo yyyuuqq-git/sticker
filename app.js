@@ -817,6 +817,10 @@ async function refreshApp() {
     // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
     if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
     if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
+
+    // 로딩 종료 및 컨텐츠 표출
+    loadingSpinner.classList.add("hidden");
+    appContent.classList.remove("hidden");
 }
 
 // 단일 슬롯 DOM 요소 생성 헬퍼
