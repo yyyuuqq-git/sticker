@@ -395,8 +395,9 @@ function getCosmicStickerSvg(index, isSticker) {
 // 5.5 등록된 보드 목록 관리 및 사이드바 렌더링
 // ==========================================
 
-// 모든 스티커판 목록 조회 (서버 전체 탐색용)
+// 모든 스티커판 목록 조회 (서버 전체 탐색용 - 실이용자 보드 목록만 반환)
 async function apiGetAllBoards() {
+    const isTestBoard = (b) => b && b.id && (String(b.id).toUpperCase().startsWith("TEST-") || String(b.id).toUpperCase().includes("TEST"));
     if (isLocalMode || !supabaseClient) {
         // 로컬스토리지 전체 키 순회
         const boards = [];
@@ -405,7 +406,7 @@ async function apiGetAllBoards() {
             if (key.startsWith("board_")) {
                 try {
                     const board = JSON.parse(localStorage.getItem(key));
-                    if (board && board.id) {
+                    if (board && board.id && !isTestBoard(board)) {
                         boards.push(board);
                     }
                 } catch(e){}
@@ -419,7 +420,7 @@ async function apiGetAllBoards() {
                 .select("*")
                 .order("created_at", { ascending: false });
             if (error) throw error;
-            return data || [];
+            return (data || []).filter(b => !isTestBoard(b));
         } catch (e) {
             console.error("전체 보드 조회 실패", e);
             const boards = [];
@@ -428,7 +429,7 @@ async function apiGetAllBoards() {
                 if (key.startsWith("board_")) {
                     try {
                         const board = JSON.parse(localStorage.getItem(key));
-                        if (board && board.id) {
+                        if (board && board.id && !isTestBoard(board)) {
                             boards.push(board);
                         }
                     } catch(e){}
