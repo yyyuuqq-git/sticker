@@ -626,6 +626,7 @@ function renderStickerPickerGrid() {
         const isSel = creature.id === selectedStickerType;
         const item = document.createElement("div");
         item.className = `sticker-option-item ${isSel ? "selected" : ""}`;
+        item.dataset.creatureId = creature.id;
         item.innerHTML = `
             <div class="sticker-option-icon">
                 <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
@@ -635,11 +636,15 @@ function renderStickerPickerGrid() {
             <span class="sticker-option-label">${creature.name}</span>
         `;
         
-        item.addEventListener("click", () => {
+        const selectHandler = (e) => {
+            if (e) e.stopPropagation();
             selectedStickerType = creature.id;
-            document.querySelectorAll(".sticker-option-item").forEach(el => el.classList.remove("selected"));
+            gridContainer.querySelectorAll(".sticker-option-item").forEach(el => el.classList.remove("selected"));
             item.classList.add("selected");
-        });
+        };
+
+        item.addEventListener("click", selectHandler);
+        item.addEventListener("touchstart", selectHandler, { passive: true });
         
         gridContainer.appendChild(item);
     });
@@ -1321,7 +1326,9 @@ async function handleSlotClick(index, isActive) {
             return;
         }
         memoTargetIndex = index;
-        selectedStickerType = index % 10; // 기본 선택 스티커
+        if (typeof selectedStickerType === "undefined" || selectedStickerType === null) {
+            selectedStickerType = 0;
+        }
         inputStickerMemo.value = "";
         
         renderStickerPickerGrid();
