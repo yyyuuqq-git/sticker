@@ -603,7 +603,7 @@ function getSeaCreatureGraphic(type) {
     }
 }
 
-function getCosmicStickerSvg(index, isSticker, rawMemo = "") {
+function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
     const parsed = parseStickerMemo(rawMemo);
     const type = (parsed.type !== null && parsed.type >= 0 && parsed.type < 10) ? parsed.type : (index % 10);
     
@@ -1184,7 +1184,7 @@ async function refreshApp() {
                 slot.className = `grid-slot ${isActive ? "active" : ""}`;
                 slot.setAttribute("data-memo", rawMemo);
                 slot.innerHTML = `
-                    ${getCosmicStickerSvg(i, isActive)}
+                    ${getSeaCreatureStickerSvg(i, isActive, rawMemo)}
                     <span class="slot-number">${i + 1}</span>
                 `;
             }
