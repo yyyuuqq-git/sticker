@@ -84,6 +84,8 @@ const btnPinSubmit = document.getElementById("btn-pin-submit");
 const modalSettings = document.getElementById("modal-settings");
 const inputSwitchBoard = document.getElementById("input-switch-board");
 const btnSwitchBoard = document.getElementById("btn-switch-board");
+const appMainLogo = document.getElementById("app-main-logo");
+const editAppTitle = document.getElementById("edit-app-title");
 const editPin = document.getElementById("edit-pin");
 const editReaderName = document.getElementById("edit-reader-name");
 const editEditorName = document.getElementById("edit-editor-name");
@@ -1184,6 +1186,9 @@ async function refreshApp() {
         }
 
         // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
+        const savedAppTitle = (currentBoard && currentBoard.app_title) || localStorage.getItem(`app_title_${currentBoardId}`) || localStorage.getItem("global_app_title") || "우주 칭찬나라";
+        if (appMainLogo) appMainLogo.textContent = savedAppTitle;
+        if (editAppTitle) editAppTitle.value = savedAppTitle;
         if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
         if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
 
@@ -1425,11 +1430,14 @@ btnToggleRole.addEventListener("click", () => {
 });
 
 // 새 칭찬판 만들기 다이얼로그 노출
-btnShare.addEventListener("click", () => {
-    modalShare.classList.remove("hidden");
-    inputCreateBoardTitle.value = "";
-    inputCreateBoardTitle.focus();
-});
+// 새 칭찬판 만들기 다이얼로그 노출
+if (btnShare) {
+    btnShare.addEventListener("click", () => {
+        modalShare.classList.remove("hidden");
+        inputCreateBoardTitle.value = "";
+        inputCreateBoardTitle.focus();
+    });
+}
 
 btnShareClose.addEventListener("click", () => {
     modalShare.classList.add("hidden");
@@ -1516,16 +1524,23 @@ btnSettingsSave.addEventListener("click", async () => {
     loadingSpinner.classList.remove("hidden");
     modalSettings.classList.add("hidden");
 
+    const newAppTitle = editAppTitle ? editAppTitle.value.trim() : "";
     const newPin = editPin.value.trim();
     const newReaderName = editReaderName.value.trim();
     const newEditorName = editEditorName.value.trim();
 
+    if (newAppTitle) {
+        localStorage.setItem(`app_title_${currentBoardId}`, newAppTitle);
+        localStorage.setItem("global_app_title", newAppTitle);
+        if (appMainLogo) appMainLogo.textContent = newAppTitle;
+    }
     localStorage.setItem("global_editor_pin", newPin);
     localStorage.setItem("global_reader_role_name", newReaderName);
     localStorage.setItem("global_editor_role_name", newEditorName);
 
     const updated = {
         ...currentBoard,
+        app_title: newAppTitle || (currentBoard && currentBoard.app_title) || "우주 칭찬나라",
         editor_pin: newPin || currentBoard.editor_pin,
         reader_role_name: newReaderName || "남자친구 모드 (조회 전용)",
         editor_role_name: newEditorName || "여자친구 모드 (부착 가능)"
