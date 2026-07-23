@@ -380,19 +380,19 @@ async function apiRemoveSticker(boardId, index) {
 }
 
 // ==========================================
-// 5. 3D 크리스탈 에폭시 스티커 10종 빌더
+// 5. 100% 3D 크리스탈 해양생물 스티커 10종 빌더
 // ==========================================
 const SEA_CREATURES = [
-    { id: 0, name: "꿈꾸는 보라 달 🌙", emoji: "🌙" },
-    { id: 1, name: "은하수 보라 고래 🐳", emoji: "🐳" },
-    { id: 2, name: "귀여운 에폭시 펭귄 🐧", emoji: "🐧" },
+    { id: 0, name: "은하수 보라 고래 🐳", emoji: "🐳" },
+    { id: 1, name: "크리스탈 아기 돌고래 🐬", emoji: "🐬" },
+    { id: 2, name: "에메랄드 바다거북 🐢", emoji: "🐢" },
     { id: 3, name: "영롱한 젤리 문어 🐙", emoji: "🐙" },
-    { id: 4, name: "빛나는 바이올렛 조개 🐚", emoji: "🐚" },
+    { id: 4, name: "귀요미 에폭시 꽃게 🦀", emoji: "🦀" },
     { id: 5, name: "몽환의 크리스탈 해파리 🪼", emoji: "🪼" },
-    { id: 6, name: "에메랄드 유리 거북이 🐢", emoji: "🐢" },
-    { id: 7, name: "우주 스노우 파르페 🍦", emoji: "🍦" },
-    { id: 8, name: "마법의 은하수 구슬 🔮", emoji: "🔮" },
-    { id: 9, name: "반짝이는 소원 별 ⭐️", emoji: "⭐️" }
+    { id: 6, name: "빛나는 바이올렛 조개 🐚", emoji: "🐚" },
+    { id: 7, name: "반짝이는 오렌지 열대어 🐠", emoji: "🐠" },
+    { id: 8, name: "코스믹 범고래 🦈", emoji: "🦈" },
+    { id: 9, name: "귀여운 에폭시 펭귄 🐧", emoji: "🐧" }
 ];
 
 let selectedStickerType = 0;
@@ -408,35 +408,7 @@ function parseStickerMemo(rawMemo) {
 
 function getSeaCreatureGraphic(type) {
     switch (type) {
-        case 0: // 🌙 꿈꾸는 보라 달
-            return `
-                <defs>
-                    <radialGradient id="crystal-moon-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#E9D5FF" />
-                        <stop offset="45%" stop-color="#C084FC" />
-                        <stop offset="85%" stop-color="#7E22CE" />
-                        <stop offset="100%" stop-color="#581C87" />
-                    </radialGradient>
-                    <linearGradient id="moon-glass-hl-${type}" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
-                        <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.2" />
-                        <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" opacity="0" />
-                    </linearGradient>
-                    <filter id="glow-moon-${type}" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#7E22CE" flood-opacity="0.35" />
-                    </filter>
-                </defs>
-                <circle cx="50" cy="50" r="44" fill="#F3E8FF" stroke="#E9D5FF" stroke-width="2" />
-                <g filter="url(#glow-moon-${type})">
-                    <path d="M 58 20 C 38 20 25 36 25 55 C 25 72 38 84 56 82 C 42 76 36 60 40 46 C 44 32 54 24 58 20 Z" fill="url(#crystal-moon-bg-${type})" stroke="#DDD6FE" stroke-width="1.2" />
-                    <path d="M 58 20 C 38 20 25 36 25 55 C 25 72 38 84 56 82 C 42 76 36 60 40 46 C 44 32 54 24 58 20 Z" fill="url(#moon-glass-hl-${type})" />
-                </g>
-                <path d="M 68 28 L 70 32 L 74 34 L 70 36 L 68 40 L 66 36 L 62 34 L 66 32 Z" fill="#FFFFFF" opacity="0.9" />
-                <path d="M 72 56 L 73 59 L 76 60 L 73 61 L 72 64 L 71 61 L 68 60 L 71 59 Z" fill="#F472B6" opacity="0.8" />
-                <ellipse cx="34" cy="38" rx="3.5" ry="8" fill="#FFFFFF" opacity="0.75" transform="rotate(-20 34 38)" />
-                <circle cx="48" cy="72" r="2" fill="#FFFFFF" opacity="0.6" />
-            `;
-        case 1: // 🐳 은하수 보라 고래
+        case 0: // 🐳 은하수 보라 고래
             return `
                 <defs>
                     <radialGradient id="crystal-whale-bg-${type}" cx="35%" cy="30%" r="70%">
@@ -463,36 +435,48 @@ function getSeaCreatureGraphic(type) {
                 <circle cx="56" cy="48" r="1.5" fill="#FFFFFF" opacity="0.9" />
                 <circle cx="64" cy="52" r="1" fill="#FFFFFF" opacity="0.7" />
             `;
-        case 2: // 🐧 귀여운 에폭시 펭귄
+        case 1: // 🐬 크리스탈 아기 돌고래
             return `
                 <defs>
-                    <radialGradient id="crystal-pen-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#4B5563" />
-                        <stop offset="60%" stop-color="#1F2937" />
-                        <stop offset="100%" stop-color="#111827" />
+                    <radialGradient id="dol-body-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#38BDF8" />
+                        <stop offset="60%" stop-color="#0284C7" />
+                        <stop offset="100%" stop-color="#0369A1" />
                     </radialGradient>
-                    <linearGradient id="pen-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#FFFFFF" />
-                        <stop offset="100%" stop-color="#F3E8FF" />
+                    <linearGradient id="dol-hl-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85" />
+                        <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0" />
                     </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2" />
-                <ellipse cx="50" cy="54" rx="28" ry="30" fill="url(#crystal-pen-bg-${type})" stroke="#1F2937" stroke-width="1.5" />
-                <ellipse cx="50" cy="34" rx="22" ry="20" fill="url(#crystal-pen-bg-${type})" />
-                <ellipse cx="50" cy="56" rx="19" ry="22" fill="url(#pen-belly-${type})" />
-                <ellipse cx="50" cy="38" rx="14" ry="12" fill="url(#pen-belly-${type})" />
-                <ellipse cx="22" cy="54" rx="7" ry="16" fill="url(#crystal-pen-bg-${type})" transform="rotate(20 22 54)" />
-                <ellipse cx="78" cy="54" rx="7" ry="16" fill="url(#crystal-pen-bg-${type})" transform="rotate(-20 78 54)" />
-                <ellipse cx="44" cy="80" rx="6" ry="3" fill="#F59E0B" />
-                <ellipse cx="56" cy="80" rx="6" ry="3" fill="#F59E0B" />
-                <polygon points="50,40 45,46 55,46" fill="#F59E0B" />
-                <circle cx="42" cy="36" r="2.5" fill="#111827" />
-                <circle cx="58" cy="36" r="2.5" fill="#111827" />
-                <circle cx="43" cy="35" r="0.8" fill="#FFFFFF" />
-                <circle cx="59" cy="35" r="0.8" fill="#FFFFFF" />
-                <ellipse cx="37" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
-                <ellipse cx="63" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
-                <ellipse cx="40" cy="24" rx="6" ry="3" fill="#FFFFFF" opacity="0.5" transform="rotate(-15 40 24)" />
+                <circle cx="50" cy="50" r="44" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="2" />
+                <path d="M 20 58 C 22 34 56 26 78 40 C 84 45 80 52 70 52 C 55 52 35 60 20 58 Z" fill="url(#dol-body-${type})" stroke="#0284C7" stroke-width="1.5" />
+                <path d="M 20 58 C 22 34 56 26 78 40 C 84 45 80 52 70 52 C 55 52 35 60 20 58 Z" fill="url(#dol-hl-${type})" />
+                <path d="M 48 30 Q 56 18 62 28 Z" fill="url(#dol-body-${type})" />
+                <path d="M 20 58 Q 10 52 12 64 Q 18 60 20 58 Z" fill="url(#dol-body-${type})" />
+                <circle cx="68" cy="42" r="3" fill="#0F172A" />
+                <circle cx="69" cy="41" r="1" fill="#FFFFFF" />
+                <ellipse cx="64" cy="47" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
+            `;
+        case 2: // 🐢 에메랄드 바다거북
+            return `
+                <defs>
+                    <radialGradient id="turt-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#34D399" />
+                        <stop offset="55%" stop-color="#059669" />
+                        <stop offset="100%" stop-color="#064E3B" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="2" />
+                <circle cx="50" cy="22" r="9" fill="#10B981" />
+                <ellipse cx="25" cy="38" rx="8" ry="12" fill="#10B981" transform="rotate(-30 25 38)" />
+                <ellipse cx="75" cy="38" rx="8" ry="12" fill="#10B981" transform="rotate(30 75 38)" />
+                <ellipse cx="28" cy="68" rx="7" ry="10" fill="#10B981" transform="rotate(30 28 68)" />
+                <ellipse cx="72" cy="68" rx="7" ry="10" fill="#10B981" transform="rotate(-30 72 68)" />
+                <circle cx="50" cy="54" r="26" fill="url(#turt-bg-${type})" stroke="#047857" stroke-width="1.5" />
+                <polygon points="50,34 64,44 64,62 50,72 36,62 36,44" fill="none" stroke="#A7F3D0" stroke-width="1.8" opacity="0.8" />
+                <circle cx="46" cy="19" r="1.8" fill="#064E3B" />
+                <circle cx="54" cy="19" r="1.8" fill="#064E3B" />
+                <ellipse cx="40" cy="42" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.65" transform="rotate(-20 40 42)" />
             `;
         case 3: // 🐙 영롱한 젤리 문어
             return `
@@ -524,26 +508,25 @@ function getSeaCreatureGraphic(type) {
                 <ellipse cx="49" cy="52" rx="3" ry="4" fill="#881337" opacity="0.6" />
                 <ellipse cx="36" cy="30" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.75" transform="rotate(-20 36 30)" />
             `;
-        case 4: // 🐚 빛나는 바이올렛 조개
+        case 4: // 🦀 귀요미 에폭시 꽃게
             return `
                 <defs>
-                    <radialGradient id="shell-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#E9D5FF" />
-                        <stop offset="50%" stop-color="#A855F7" />
-                        <stop offset="100%" stop-color="#6B21A8" />
+                    <radialGradient id="crab-body-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#F87171" />
+                        <stop offset="60%" stop-color="#EF4444" />
+                        <stop offset="100%" stop-color="#991B1B" />
                     </radialGradient>
-                    <linearGradient id="shell-hl-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
-                        <stop offset="70%" stop-color="#FFFFFF" stop-opacity="0.1" />
-                    </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#F3E8FF" stroke="#E9D5FF" stroke-width="2" />
-                <path d="M 50 78 L 22 56 C 18 36 38 20 50 20 C 62 20 82 36 78 56 Z" fill="url(#shell-bg-${type})" stroke="#581C87" stroke-width="1.5" />
-                <path d="M 50 78 L 22 56 C 18 36 38 20 50 20 C 62 20 82 36 78 56 Z" fill="url(#shell-hl-${type})" />
-                <path d="M 50 78 L 32 30 M 50 78 L 44 24 M 50 78 L 56 24 M 50 78 L 68 30" stroke="#F5D0FE" stroke-width="1.8" opacity="0.7" fill="none" />
-                <circle cx="50" cy="62" r="7" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1" />
-                <circle cx="48" cy="60" r="2.5" fill="#FFFFFF" />
-                <ellipse cx="36" cy="32" rx="6" ry="3" fill="#FFFFFF" opacity="0.7" transform="rotate(-30 36 32)" />
+                <circle cx="50" cy="50" r="44" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2" />
+                <path d="M 24 55 Q 12 52 16 68 M 26 62 Q 16 64 20 76 M 76 55 Q 88 52 84 68 M 74 62 Q 84 64 80 76" stroke="#DC2626" stroke-width="3.5" stroke-linecap="round" fill="none" />
+                <path d="M 28 40 Q 16 32 18 22 Q 28 20 30 32 Z" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.2" />
+                <path d="M 72 40 Q 84 32 82 22 Q 72 20 70 32 Z" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.2" />
+                <ellipse cx="50" cy="54" rx="24" ry="17" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.5" />
+                <circle cx="42" cy="34" r="4.5" fill="#FFFFFF" stroke="#991B1B" stroke-width="1.2" />
+                <circle cx="42" cy="34" r="2" fill="#0F172A" />
+                <circle cx="58" cy="34" r="4.5" fill="#FFFFFF" stroke="#991B1B" stroke-width="1.2" />
+                <circle cx="58" cy="34" r="2" fill="#0F172A" />
+                <path d="M 44 58 Q 50 64 56 58" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" />
             `;
         case 5: // 🪼 몽환의 크리스탈 해파리
             return `
@@ -565,81 +548,97 @@ function getSeaCreatureGraphic(type) {
                 <ellipse cx="34" cy="45" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
                 <ellipse cx="66" cy="45" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
             `;
-        case 6: // 🐢 에메랄드 유리 거북이
+        case 6: // 🐚 빛나는 바이올렛 조개
             return `
                 <defs>
-                    <radialGradient id="turt-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#34D399" />
-                        <stop offset="55%" stop-color="#059669" />
-                        <stop offset="100%" stop-color="#064E3B" />
+                    <radialGradient id="shell-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#E9D5FF" />
+                        <stop offset="50%" stop-color="#A855F7" />
+                        <stop offset="100%" stop-color="#6B21A8" />
                     </radialGradient>
-                </defs>
-                <circle cx="50" cy="50" r="44" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="2" />
-                <circle cx="50" cy="22" r="9" fill="#10B981" />
-                <ellipse cx="25" cy="38" rx="8" ry="12" fill="#10B981" transform="rotate(-30 25 38)" />
-                <ellipse cx="75" cy="38" rx="8" ry="12" fill="#10B981" transform="rotate(30 75 38)" />
-                <ellipse cx="28" cy="68" rx="7" ry="10" fill="#10B981" transform="rotate(30 28 68)" />
-                <ellipse cx="72" cy="68" rx="7" ry="10" fill="#10B981" transform="rotate(-30 72 68)" />
-                <circle cx="50" cy="54" r="26" fill="url(#turt-bg-${type})" stroke="#047857" stroke-width="1.5" />
-                <polygon points="50,34 64,44 64,62 50,72 36,62 36,44" fill="none" stroke="#A7F3D0" stroke-width="1.8" opacity="0.8" />
-                <circle cx="46" cy="19" r="1.8" fill="#064E3B" />
-                <circle cx="54" cy="19" r="1.8" fill="#064E3B" />
-                <ellipse cx="40" cy="42" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.65" transform="rotate(-20 40 42)" />
-            `;
-        case 7: // 🍦 우주 스노우 파르페
-            return `
-                <defs>
-                    <linearGradient id="ice-glass-${type}" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#C084FC" />
-                        <stop offset="50%" stop-color="#8B5CF6" />
-                        <stop offset="100%" stop-color="#3B82F6" />
+                    <linearGradient id="shell-hl-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
+                        <stop offset="70%" stop-color="#FFFFFF" stop-opacity="0.1" />
                     </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#F5D0FE" opacity="0.3" stroke="#F5D0FE" stroke-width="2" />
-                <path d="M 32 40 L 38 72 Q 50 82 62 72 L 68 40 Z" fill="url(#ice-glass-${type})" stroke="#7E22CE" stroke-width="1.5" opacity="0.85" />
-                <ellipse cx="50" cy="80" rx="14" ry="4" fill="#A855F7" />
-                <path d="M 30 42 C 30 28 40 24 50 20 C 60 24 70 28 70 42 Z" fill="#FFFFFF" stroke="#E9D5FF" stroke-width="1.2" />
-                <circle cx="50" cy="18" r="5" fill="#F43F5E" />
-                <circle cx="48" cy="16" r="1.5" fill="#FFFFFF" />
-                <path d="M 35 44 L 40 68" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.75" />
+                <circle cx="50" cy="50" r="44" fill="#F3E8FF" stroke="#E9D5FF" stroke-width="2" />
+                <path d="M 50 78 L 22 56 C 18 36 38 20 50 20 C 62 20 82 36 78 56 Z" fill="url(#shell-bg-${type})" stroke="#581C87" stroke-width="1.5" />
+                <path d="M 50 78 L 22 56 C 18 36 38 20 50 20 C 62 20 82 36 78 56 Z" fill="url(#shell-hl-${type})" />
+                <path d="M 50 78 L 32 30 M 50 78 L 44 24 M 50 78 L 56 24 M 50 78 L 68 30" stroke="#F5D0FE" stroke-width="1.8" opacity="0.7" fill="none" />
+                <circle cx="50" cy="62" r="7" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1" />
+                <circle cx="48" cy="60" r="2.5" fill="#FFFFFF" />
+                <ellipse cx="36" cy="32" rx="6" ry="3" fill="#FFFFFF" opacity="0.7" transform="rotate(-30 36 32)" />
             `;
-        case 8: // 🔮 마법의 은하수 구슬
+        case 7: // 🐠 반짝이는 오렌지 열대어
             return `
                 <defs>
-                    <radialGradient id="orb-bg-${type}" cx="30%" cy="25%" r="75%">
-                        <stop offset="0%" stop-color="#F5D0FE" />
-                        <stop offset="35%" stop-color="#C084FC" />
-                        <stop offset="70%" stop-color="#7E22CE" />
-                        <stop offset="100%" stop-color="#3B0764" />
+                    <radialGradient id="clown-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#FB923C" />
+                        <stop offset="60%" stop-color="#F97316" />
+                        <stop offset="100%" stop-color="#C2410C" />
                     </radialGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="2" />
-                <circle cx="50" cy="50" r="34" fill="url(#orb-bg-${type})" stroke="#6B21A8" stroke-width="1.5" />
-                <path d="M 50 32 L 52 36 L 56 38 L 52 40 L 50 44 L 48 40 L 44 38 L 48 36 Z" fill="#FFFFFF" opacity="0.95" />
-                <circle cx="36" cy="56" r="1.5" fill="#FFFFFF" opacity="0.8" />
-                <circle cx="62" cy="46" r="2" fill="#F472B6" opacity="0.8" />
-                <circle cx="60" cy="60" r="1" fill="#FFFFFF" opacity="0.9" />
-                <ellipse cx="38" cy="34" rx="10" ry="5" fill="#FFFFFF" opacity="0.7" transform="rotate(-30 38 34)" />
-                <circle cx="62" cy="64" r="3" fill="#FFFFFF" opacity="0.4" />
+                <circle cx="50" cy="50" r="44" fill="#FFF7ED" stroke="#FFEDD5" stroke-width="2" />
+                <path d="M 72 50 L 88 36 L 84 50 L 88 64 Z" fill="url(#clown-bg-${type})" stroke="#9A3412" stroke-width="1.2" />
+                <ellipse cx="46" cy="50" rx="28" ry="20" fill="url(#clown-bg-${type})" stroke="#9A3412" stroke-width="1.5" />
+                <path d="M 40 31 C 44 38 44 62 40 69 C 45 69 49 61 47 31 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1" />
+                <path d="M 58 35 C 61 42 61 58 58 65 C 62 65 65 58 63 35 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1" />
+                <circle cx="28" cy="46" r="3.5" fill="#0F172A" />
+                <circle cx="29" cy="45" r="1.2" fill="#FFFFFF" />
+                <path d="M 20 52 Q 24 54 20 56" stroke="#9A3412" stroke-width="2" stroke-linecap="round" fill="none" />
             `;
-        case 9: // ⭐️ 반짝이는 소원 별
+        case 8: // 🦈 코스믹 범고래
             return `
                 <defs>
-                    <radialGradient id="star-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#FDE047" />
-                        <stop offset="50%" stop-color="#F59E0B" />
-                        <stop offset="100%" stop-color="#B45309" />
+                    <radialGradient id="orca-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#38BDF8" />
+                        <stop offset="50%" stop-color="#1E3A8A" />
+                        <stop offset="100%" stop-color="#0F172A" />
                     </radialGradient>
+                    <linearGradient id="orca-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" />
+                        <stop offset="100%" stop-color="#E0F2FE" />
+                    </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#FEFCE8" stroke="#FEF08A" stroke-width="2" />
-                <polygon points="50,18 59,36 78,38 64,52 68,72 50,61 32,72 36,52 22,38 41,36" fill="url(#star-bg-${type})" stroke="#D97706" stroke-width="1.5" />
-                <circle cx="43" cy="44" r="2.5" fill="#78350F" />
-                <circle cx="57" cy="44" r="2.5" fill="#78350F" />
-                <circle cx="44" cy="43" r="0.8" fill="#FFFFFF" />
-                <circle cx="58" cy="43" r="0.8" fill="#FFFFFF" />
-                <ellipse cx="38" cy="48" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
-                <ellipse cx="62" cy="48" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
-                <polygon points="50,22 56,36 44,36" fill="#FFFFFF" opacity="0.55" />
+                <circle cx="50" cy="50" r="44" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="2" />
+                <path d="M 45 32 Q 54 14 62 26 Z" fill="url(#orca-bg-${type})" />
+                <path d="M 18 54 C 18 34 50 32 78 44 C 86 48 84 58 72 62 C 58 68 38 68 20 62 Z" fill="url(#orca-bg-${type})" stroke="#1E3A8A" stroke-width="1.5" />
+                <path d="M 24 60 C 34 66 56 66 66 60 C 56 65 34 65 24 60 Z" fill="url(#orca-belly-${type})" />
+                <ellipse cx="32" cy="46" rx="4" ry="2.5" fill="#FFFFFF" opacity="0.9" />
+                <circle cx="34" cy="48" r="2" fill="#0F172A" />
+                <circle cx="34.5" cy="47.5" r="0.7" fill="#FFFFFF" />
+                <path d="M 78 44 C 84 38 90 38 92 44 C 88 50 82 50 78 48 Z" fill="url(#orca-bg-${type})" />
+            `;
+        case 9: // 🐧 귀여운 에폭시 펭귄
+            return `
+                <defs>
+                    <radialGradient id="crystal-pen-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#4B5563" />
+                        <stop offset="60%" stop-color="#1F2937" />
+                        <stop offset="100%" stop-color="#111827" />
+                    </radialGradient>
+                    <linearGradient id="pen-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" />
+                        <stop offset="100%" stop-color="#F3E8FF" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2" />
+                <ellipse cx="50" cy="54" rx="28" ry="30" fill="url(#crystal-pen-bg-${type})" stroke="#1F2937" stroke-width="1.5" />
+                <ellipse cx="50" cy="34" rx="22" ry="20" fill="url(#crystal-pen-bg-${type})" />
+                <ellipse cx="50" cy="56" rx="19" ry="22" fill="url(#pen-belly-${type})" />
+                <ellipse cx="50" cy="38" rx="14" ry="12" fill="url(#pen-belly-${type})" />
+                <ellipse cx="22" cy="54" rx="7" ry="16" fill="url(#crystal-pen-bg-${type})" transform="rotate(20 22 54)" />
+                <ellipse cx="78" cy="54" rx="7" ry="16" fill="url(#crystal-pen-bg-${type})" transform="rotate(-20 78 54)" />
+                <ellipse cx="44" cy="80" rx="6" ry="3" fill="#F59E0B" />
+                <ellipse cx="56" cy="80" rx="6" ry="3" fill="#F59E0B" />
+                <polygon points="50,40 45,46 55,46" fill="#F59E0B" />
+                <circle cx="42" cy="36" r="2.5" fill="#111827" />
+                <circle cx="58" cy="36" r="2.5" fill="#111827" />
+                <circle cx="43" cy="35" r="0.8" fill="#FFFFFF" />
+                <circle cx="59" cy="35" r="0.8" fill="#FFFFFF" />
+                <ellipse cx="37" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
+                <ellipse cx="63" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
+                <ellipse cx="40" cy="24" rx="6" ry="3" fill="#FFFFFF" opacity="0.5" transform="rotate(-15 40 24)" />
             `;
         default:
             return `<circle cx="50" cy="50" r="40" fill="#A855F7" />`;
