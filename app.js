@@ -1148,6 +1148,37 @@ function createBoardItemDOM(board, isLocal) {
 // 6. UI 업데이트 및 렌더링 로직
 // ==========================================
 
+let realtimeChannel = null;
+function setupRealtimeSubscription(boardId) {
+    if (!supabaseClient || !boardId || isLocalMode) return;
+    if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+    }
+    try {
+        realtimeChannel = supabaseClient
+            .channel(`public:praise_stickers:${boardId}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'praise_stickers', filter: `board_id=eq.${boardId}` },
+                (payload) => {
+                    const newRecord = payload.new;
+                    if (newRecord && newRecord.sticker_index === 999) {
+                        const match = (newRecord.memo || "").match(/\[theme:(#[0-9A-Fa-f]{6})\]/);
+                        if (match) {
+                            applyThemeColor(match[1], false);
+                        }
+                    } else {
+                        refreshApp();
+                    }
+                }
+            )
+            .subscribe();
+    } catch (e) {
+        console.warn("Realtime 구독 설정 에러:", e);
+    }
+}
+
 // 현재 화면 리프레시
 async function refreshApp() {
     try {
@@ -1188,13 +1219,30 @@ async function refreshApp() {
         // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
         welcomeScreen.classList.add("hidden");
         currentBoard = board;
+        setupRealtimeSubscription(board.id);
 
         // 로컬 보드 목록 관리 및 갱신
         addRegisteredBoard(board.id, board.title, board.reward_text);
         renderBoardList();
 
         // 2. 스티커 정보 로드
-        currentStickers = await apiGetStickers(currentBoardId);
+        const rawStickers = await apiGetStickers(currentBoardId);
+
+        // 2.5 테마 메타데이터(sticker_index === 999) 감지 및 즉시 적용
+        const themeMeta = rawStickers.find(s => s.sticker_index === 999);
+        let activeThemeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#4A5568";
+        if (themeMeta && themeMeta.memo) {
+            const match = themeMeta.memo.match(/\[theme:(#[0-9A-Fa-f]{6})\]/);
+            if (match) {
+                activeThemeColor = match[1];
+                localStorage.setItem(`board_theme_color_${currentBoardId}`, activeThemeColor);
+                if (currentBoard) currentBoard.theme_color = activeThemeColor;
+            }
+        }
+        applyThemeColor(activeThemeColor, false);
+
+        // 실제 보드에 표시할 스티커만 필터링 (index < 100)
+        currentStickers = rawStickers.filter(s => s.sticker_index < 100);
         const activeIndices = new Set(currentStickers.map(s => s.sticker_index));
 
         // 3. 헤더 및 요약 카드 업데이트
@@ -1254,10 +1302,6 @@ async function refreshApp() {
         if (editAppTitle) editAppTitle.value = savedAppTitle;
         if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
         if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
-
-        // 6. 보드 테마 색상 적용
-        const savedThemeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#4A5568";
-        applyThemeColor(savedThemeColor, false);
 
         // 컨텐츠 표출
         appContent.classList.remove("hidden");
@@ -1653,8 +1697,8 @@ function applyThemeColor(hex, save = false) {
         localStorage.setItem(`board_theme_color_${currentBoardId}`, hex);
         if (currentBoard) {
             currentBoard.theme_color = hex;
-            apiCreateBoard(currentBoard);
         }
+        apiSaveThemeColor(currentBoardId, hex);
     }
 }
 
