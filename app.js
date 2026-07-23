@@ -550,19 +550,85 @@ function getSeaCreatureGraphic(type) {
                     </linearGradient>
                 </defs>
                 <circle cx="50" cy="50" r="44" fill="#FEF3C7" stroke="#FDE68A" stroke-width="2" />
-                <ellipse cx="44" cy="80" rx="6" ry="3" fill="#F59E0B" />
-                <ellipse cx="56" cy="80" rx="6" ry="3" fill="#F59E0B" />
-                <polygon points="50,40 45,46 55,46" fill="#F59E0B" />
-                <circle cx="42" cy="36" r="2.5" fill="#111827" />
-                <circle cx="58" cy="36" r="2.5" fill="#111827" />
-                <circle cx="43" cy="35" r="0.8" fill="#FFFFFF" />
-                <circle cx="59" cy="35" r="0.8" fill="#FFFFFF" />
-                <ellipse cx="37" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
-                <ellipse cx="63" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
-                <ellipse cx="40" cy="24" rx="6" ry="3" fill="#FFFFFF" opacity="0.5" transform="rotate(-15 40 24)" />
+                <circle cx="28" cy="30" r="5" fill="url(#real-otter-bg-${type})" />
+                <circle cx="72" cy="30" r="5" fill="url(#real-otter-bg-${type})" />
+                <ellipse cx="50" cy="38" rx="22" ry="18" fill="url(#real-otter-bg-${type})" stroke="#451A03" stroke-width="1.2" />
+                <ellipse cx="50" cy="64" rx="20" ry="20" fill="url(#real-otter-bg-${type})" stroke="#451A03" stroke-width="1.2" />
+                <ellipse cx="50" cy="62" rx="14" ry="15" fill="url(#real-otter-chest-${type})" />
+                <path d="M 44 56 C 44 50 56 50 56 56 Z" fill="#F472B6" stroke="#9D174D" stroke-width="1" />
+                <ellipse cx="40" cy="58" rx="5" ry="3" fill="url(#real-otter-bg-${type})" transform="rotate(30 40 58)" />
+                <ellipse cx="60" cy="58" rx="5" ry="3" fill="url(#real-otter-bg-${type})" transform="rotate(-30 60 58)" />
+                <ellipse cx="50" cy="42" rx="7" ry="5" fill="url(#real-otter-chest-${type})" />
+                <circle cx="42" cy="36" r="2.2" fill="#0F172A" />
+                <circle cx="58" cy="36" r="2.2" fill="#0F172A" />
+                <circle cx="42.5" cy="35.5" r="0.6" fill="#FFFFFF" />
+                <circle cx="58.5" cy="35.5" r="0.6" fill="#FFFFFF" />
+                <polygon points="50,40 47,43 53,43" fill="#451A03" />
+            `;
+        case 7: // 🪸 대왕 만타 가오리
+            return `
+                <defs>
+                    <radialGradient id="real-ray-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#475569" />
+                        <stop offset="60%" stop-color="#1E293B" />
+                        <stop offset="100%" stop-color="#0F172A" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" />
+                <path d="M 50 64 Q 48 86 54 88 M 50 64 Q 52 86 54 88" stroke="#1E293B" stroke-width="2" stroke-linecap="round" fill="none" />
+                <path d="M 50 18 C 68 20 90 38 78 62 C 64 68 54 62 50 60 C 46 62 36 68 22 62 C 10 38 32 20 50 18 Z" fill="url(#real-ray-bg-${type})" stroke="#0F172A" stroke-width="1.2" />
+                <path d="M 42 18 Q 40 12 45 16 Z M 58 18 Q 60 12 55 16 Z" fill="url(#real-ray-bg-${type})" />
+                <circle cx="36" cy="26" r="2" fill="#FFFFFF" />
+                <circle cx="36" cy="26" r="1" fill="#0F172A" />
+                <circle cx="64" cy="26" r="2" fill="#FFFFFF" />
+                <circle cx="64" cy="26" r="1" fill="#0F172A" />
+                <ellipse cx="40" cy="28" rx="8" ry="3" fill="#FFFFFF" opacity="0.3" transform="rotate(-15 40 28)" />
+            `;
+        case 8: // 🦈 황제 범고래
+            return `
+                <defs>
+                    <radialGradient id="real-orca-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#334155" />
+                        <stop offset="60%" stop-color="#0F172A" />
+                        <stop offset="100%" stop-color="#020617" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" />
+                <path d="M 44 32 Q 54 12 64 26 Z" fill="url(#real-orca-bg-${type})" />
+                <path d="M 16 54 C 16 34 48 32 78 44 C 86 48 84 58 72 62 C 58 68 38 68 18 62 Z" fill="url(#real-orca-bg-${type})" stroke="#020617" stroke-width="1.2" />
+                <path d="M 22 60 C 32 66 56 66 66 60 C 56 65 32 65 22 60 Z" fill="#FFFFFF" />
+                <ellipse cx="32" cy="44" rx="5" ry="3" fill="#FFFFFF" transform="rotate(-10 32 44)" />
+                <circle cx="36" cy="47" r="1.5" fill="#020617" />
+                <path d="M 78 44 C 84 38 90 38 92 44 C 88 50 82 50 78 48 Z" fill="url(#real-orca-bg-${type})" />
+                <ellipse cx="38" cy="36" rx="8" ry="3" fill="#FFFFFF" opacity="0.3" transform="rotate(-15 38 36)" />
+            `;
+        case 9: // 🐧 황제펭귄
+            return `
+                <defs>
+                    <radialGradient id="real-pen-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#334155" />
+                        <stop offset="60%" stop-color="#0F172A" />
+                        <stop offset="100%" stop-color="#020617" />
+                    </radialGradient>
+                    <radialGradient id="pen-yellow-${type}" cx="50%" cy="30%" r="50%">
+                        <stop offset="0%" stop-color="#FDE047" />
+                        <stop offset="100%" stop-color="#F59E0B" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" />
+                <ellipse cx="44" cy="80" rx="5" ry="3" fill="#F59E0B" />
+                <ellipse cx="56" cy="80" rx="5" ry="3" fill="#F59E0B" />
+                <ellipse cx="22" cy="54" rx="6" ry="15" fill="url(#real-pen-bg-${type})" transform="rotate(20 22 54)" />
+                <ellipse cx="78" cy="54" rx="6" ry="15" fill="url(#real-pen-bg-${type})" transform="rotate(-20 78 54)" />
+                <ellipse cx="50" cy="52" rx="24" ry="28" fill="url(#real-pen-bg-${type})" stroke="#020617" stroke-width="1.2" />
+                <ellipse cx="50" cy="56" rx="16" ry="22" fill="#FFFFFF" />
+                <path d="M 38 34 C 44 42 56 42 62 34 C 58 46 42 46 38 34 Z" fill="url(#pen-yellow-${type})" />
+                <circle cx="44" cy="32" r="2" fill="#020617" />
+                <circle cx="56" cy="32" r="2" fill="#020617" />
+                <polygon points="50,40 46,46 54,46" fill="#F59E0B" />
             `;
         default:
-            return `<circle cx="50" cy="50" r="40" fill="#A855F7" />`;
+            return `<circle cx="50" cy="50" r="40" fill="#3B82F6" />`;
     }
 }
 
