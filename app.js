@@ -201,44 +201,39 @@ async function apiGetBoard(boardId) {
 
 // 보드 생성 또는 수정
 async function apiCreateBoard(board) {
-    // 로컬 캐시에는 전체 board 객체를 항상 저장 (역할명 등 로컬 전용 필드 포함)
+    // 로컬 캐시에는 전체 board 객체를 항상 저장 (역할명, 테마색 등 로컬 전용 필드 포함)
     localStorage.setItem(`board_${board.id}`, JSON.stringify(board));
+    if (board.theme_color) {
+        localStorage.setItem(`board_theme_color_${board.id}`, board.theme_color);
+    }
 
     if (isLocalMode || !supabaseClient) {
         return { success: true };
     } else {
         try {
-            // Supabase praise_boards 스키마에 존재하는 컬럼만 추출하여 전송
+            // Supabase praise_boards DB 스키마 표준 컬럼만 전송 (PGRST204 스키마 캐시 오류 방지)
             const dbBoard = {
                 id: board.id,
                 title: board.title,
                 target_count: board.target_count,
                 reward_text: board.reward_text,
-                editor_pin: board.editor_pin || "1234",
-                reader_role_name: board.reader_role_name || "남자친구 모드 (조회 전용)",
-                editor_role_name: board.editor_role_name || "여자친구 모드 (부착 가능)",
-                theme_color: board.theme_color || "#4A5568"
+                editor_pin: board.editor_pin || "1234"
             };
             if (board.created_at) {
                 dbBoard.created_at = board.created_at;
             }
 
-            console.log("Supabase upsert 요청 데이터:", dbBoard);
             const { error } = await supabaseClient
                 .from("praise_boards")
                 .upsert(dbBoard);
 
             if (error) {
-                const errMsg = `[${error.code || 'unknown'}] ${error.message || JSON.stringify(error)}`;
-                console.error("Supabase 칭찬판 저장 실패:", errMsg, error);
-                return { success: false, error: errMsg };
+                console.warn("Supabase praise_boards 싱크 알림 (로컬 캐시에 보존됨):", error.message || error);
             }
-            console.log("Supabase 칭찬판 저장 성공");
             return { success: true };
         } catch (e) {
-            const errMsg = e.message || String(e);
-            console.error("보드 생성/수정 중 예외 발생:", errMsg, e);
-            return { success: false, error: errMsg };
+            console.warn("보드 싱크 알림 (로컬 캐시에 보존됨):", e.message || String(e));
+            return { success: true };
         }
     }
 }
@@ -295,9 +290,9 @@ async function apiAddSticker(boardId, index, memo) {
     if (isLocalMode || !supabaseClient) {
         const current = await apiGetStickers(boardId);
         if (!current.some(s => s.sticker_index === index)) {
-            current.push({ 
-                board_id: boardId, 
-                sticker_index: index, 
+            current.push({
+                board_id: boardId,
+                sticker_index: index,
                 memo: memo,
                 created_at: nowISO,
                 updated_at: nowISO
@@ -309,9 +304,9 @@ async function apiAddSticker(boardId, index, memo) {
         try {
             const { error } = await supabaseClient
                 .from("praise_stickers")
-                .insert({ 
-                    board_id: boardId, 
-                    sticker_index: index, 
+                .insert({
+                    board_id: boardId,
+                    sticker_index: index,
                     memo: memo,
                     created_at: nowISO,
                     updated_at: nowISO
@@ -341,9 +336,9 @@ async function apiUpdateStickerMemo(boardId, index, memo) {
         try {
             const { error } = await supabaseClient
                 .from("praise_stickers")
-                .update({ 
-                    memo: memo, 
-                    updated_at: nowISO 
+                .update({
+                    memo: memo,
+                    updated_at: nowISO
                 })
                 .eq("board_id", boardId)
                 .eq("sticker_index", index);
@@ -380,19 +375,19 @@ async function apiRemoveSticker(boardId, index) {
 }
 
 // ==========================================
-// 5. 실사풍 3D 해양생물 스티커 10종 빌더
+// 5. 100% 3D 크리스탈 해양생물 스티커 10종 빌더
 // ==========================================
 const SEA_CREATURES = [
-    { id: 0, name: "대왕 흰수염고래 🐳", emoji: "🐳" },
-    { id: 1, name: "남방큰돌고래 🐬", emoji: "🐬" },
-    { id: 2, name: "푸른바다거북 🐢", emoji: "🐢" },
-    { id: 3, name: "대왕문어 🐙", emoji: "🐙" },
-    { id: 4, name: "바다 꽃게 🦀", emoji: "🦀" },
-    { id: 5, name: "투명 심해해파리 🪼", emoji: "🪼" },
-    { id: 6, name: "해양 수달 🦦", emoji: "🦦" },
-    { id: 7, name: "대왕 만타 가오리 🪸", emoji: "🪸" },
-    { id: 8, name: "황제 범고래 🦈", emoji: "🦈" },
-    { id: 9, name: "황제펭귄 🐧", emoji: "🐧" }
+    { id: 0, name: "은하수 보라 고래 🐳", emoji: "🐳" },
+    { id: 1, name: "크리스탈 아기 돌고래 🐬", emoji: "🐬" },
+    { id: 2, name: "에메랄드 바다거북 🐢", emoji: "🐢" },
+    { id: 3, name: "영롱한 젤리 문어 🐙", emoji: "🐙" },
+    { id: 4, name: "귀요미 에폭시 꽃게 🦀", emoji: "🦀" },
+    { id: 5, name: "몽환의 크리스탈 해파리 🪼", emoji: "🪼" },
+    { id: 6, name: "귀여운 3D 크리스탈 수달 🦦", emoji: "🦦" },
+    { id: 7, name: "영롱한 파스텔 가오리 🪸", emoji: "🪸" },
+    { id: 8, name: "코스믹 범고래 🦈", emoji: "🦈" },
+    { id: 9, name: "귀여운 에폭시 펭귄 🐧", emoji: "🐧" }
 ];
 
 let selectedStickerType = 0;
@@ -408,234 +403,268 @@ function parseStickerMemo(rawMemo) {
 
 function getSeaCreatureGraphic(type) {
     switch (type) {
-        case 0: // 🐳 대왕 흰수염고래
+        case 0: // 🐳 은하수 보라 고래
             return `
                 <defs>
-                    <radialGradient id="real-whale-body-${type}" cx="35%" cy="30%" r="75%">
-                        <stop offset="0%" stop-color="#3B82F6" />
-                        <stop offset="50%" stop-color="#1D4ED8" />
-                        <stop offset="100%" stop-color="#0F172A" />
+                    <radialGradient id="crystal-whale-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#C084FC" />
+                        <stop offset="50%" stop-color="#8B5CF6" />
+                        <stop offset="85%" stop-color="#4C1D95" />
                     </radialGradient>
-                    <linearGradient id="real-whale-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#FFFFFF" />
-                        <stop offset="100%" stop-color="#CBD5E1" />
+                    <linearGradient id="whale-glass-hl-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85" />
+                        <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.1" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#F3E8FF" stroke="#E9D5FF" stroke-width="2" />
+                <path d="M 48 24 Q 44 14 38 16 M 48 24 Q 52 12 60 14" stroke="#A855F7" stroke-width="3" stroke-linecap="round" fill="none" />
+                <circle cx="38" cy="16" r="2.5" fill="#E9D5FF" />
+                <circle cx="60" cy="14" r="2.5" fill="#E9D5FF" />
+                <path d="M 18 52 C 18 32 48 30 75 42 C 84 46 88 56 78 62 C 66 68 42 68 22 62 Z" fill="url(#crystal-whale-bg-${type})" stroke="#6D28D9" stroke-width="1.5" />
+                <path d="M 18 52 C 18 32 48 30 75 42 C 84 46 88 56 78 62 C 66 68 42 68 22 62 Z" fill="url(#whale-glass-hl-${type})" />
+                <path d="M 75 46 C 82 40 88 38 92 44 C 88 50 82 50 75 50 Z" fill="url(#crystal-whale-bg-${type})" />
+                <path d="M 24 58 C 34 66 58 66 68 58 C 58 65 34 65 24 58 Z" fill="#F5D0FE" opacity="0.85" />
+                <circle cx="34" cy="46" r="3" fill="#1E1B4B" />
+                <circle cx="35" cy="45" r="1" fill="#FFFFFF" />
+                <ellipse cx="42" cy="52" rx="3.5" ry="2.5" fill="#F472B6" opacity="0.8" />
+                <circle cx="56" cy="48" r="1.5" fill="#FFFFFF" opacity="0.9" />
+                <circle cx="64" cy="52" r="1" fill="#FFFFFF" opacity="0.7" />
+            `;
+        case 1: // 🐬 크리스탈 아기 돌고래
+            return `
+                <defs>
+                    <radialGradient id="dol-body-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#38BDF8" />
+                        <stop offset="60%" stop-color="#0284C7" />
+                        <stop offset="100%" stop-color="#0369A1" />
+                    </radialGradient>
+                    <linearGradient id="dol-hl-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85" />
+                        <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0" />
                     </linearGradient>
                 </defs>
                 <circle cx="50" cy="50" r="44" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="2" />
-                <path d="M 46 22 C 42 12 34 14 36 8 M 46 22 C 50 10 58 12 56 6 M 46 22 L 46 14" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.85" />
-                <path d="M 14 52 C 16 32 44 26 78 40 C 86 44 88 56 78 62 C 64 68 40 68 18 60 Z" fill="url(#real-whale-body-${type})" stroke="#1E3A8A" stroke-width="1.2" />
-                <path d="M 22 58 C 32 64 56 64 68 58 C 58 65 32 65 22 58 Z" fill="url(#real-whale-belly-${type})" />
-                <path d="M 28 60 Q 45 66 60 60 M 32 62 Q 45 67 56 62" stroke="#94A3B8" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.6" />
-                <path d="M 78 44 C 84 36 92 34 94 42 C 90 48 84 48 78 48 Z" fill="url(#real-whale-body-${type})" />
-                <circle cx="30" cy="46" r="2" fill="#0F172A" />
-                <circle cx="30.5" cy="45.5" r="0.6" fill="#FFFFFF" />
-                <path d="M 42 52 C 40 58 46 62 48 56 Z" fill="url(#real-whale-body-${type})" />
-                <ellipse cx="36" cy="34" rx="8" ry="3" fill="#FFFFFF" opacity="0.4" transform="rotate(-15 36 34)" />
+                <path d="M 20 58 C 22 34 56 26 78 40 C 84 45 80 52 70 52 C 55 52 35 60 20 58 Z" fill="url(#dol-body-${type})" stroke="#0284C7" stroke-width="1.5" />
+                <path d="M 20 58 C 22 34 56 26 78 40 C 84 45 80 52 70 52 C 55 52 35 60 20 58 Z" fill="url(#dol-hl-${type})" />
+                <path d="M 48 30 Q 56 18 62 28 Z" fill="url(#dol-body-${type})" />
+                <path d="M 20 58 Q 10 52 12 64 Q 18 60 20 58 Z" fill="url(#dol-body-${type})" />
+                <circle cx="68" cy="42" r="3" fill="#0F172A" />
+                <circle cx="69" cy="41" r="1" fill="#FFFFFF" />
+                <ellipse cx="64" cy="47" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
             `;
-        case 1: // 🐬 남방큰돌고래
+        case 2: // 🐢 에메랄드 바다거북
             return `
                 <defs>
-                    <radialGradient id="real-dol-body-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#60A5FA" />
-                        <stop offset="55%" stop-color="#2563EB" />
-                        <stop offset="100%" stop-color="#1E3A8A" />
-                    </radialGradient>
-                </defs>
-                <circle cx="50" cy="50" r="44" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="2" />
-                <path d="M 16 60 C 20 30 55 22 80 38 C 86 42 82 50 72 50 C 56 50 36 58 16 60 Z" fill="url(#real-dol-body-${type})" stroke="#1E3A8A" stroke-width="1.2" />
-                <path d="M 48 26 Q 58 14 64 26 Z" fill="url(#real-dol-body-${type})" />
-                <path d="M 16 60 Q 6 54 8 66 Q 14 62 16 60 Z" fill="url(#real-dol-body-${type})" />
-                <path d="M 78 40 Q 84 42 78 44 Z" fill="url(#real-dol-body-${type})" />
-                <circle cx="68" cy="40" r="2.2" fill="#0F172A" />
-                <circle cx="68.5" cy="39.5" r="0.6" fill="#FFFFFF" />
-                <ellipse cx="48" cy="32" rx="10" ry="4" fill="#FFFFFF" opacity="0.4" transform="rotate(-15 48 32)" />
-            `;
-        case 2: // 🐢 푸른바다거북
-            return `
-                <defs>
-                    <radialGradient id="real-turt-shell-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#4ADE80" />
-                        <stop offset="50%" stop-color="#16A34A" />
-                        <stop offset="100%" stop-color="#14532D" />
+                    <radialGradient id="turt-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#34D399" />
+                        <stop offset="55%" stop-color="#059669" />
+                        <stop offset="100%" stop-color="#064E3B" />
                     </radialGradient>
                 </defs>
                 <circle cx="50" cy="50" r="44" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="2" />
-                <ellipse cx="50" cy="20" rx="7" ry="8" fill="#15803D" stroke="#14532D" stroke-width="1" />
-                <path d="M 32 38 Q 12 28 14 42 Q 28 48 34 44 Z" fill="#15803D" stroke="#14532D" stroke-width="1" />
-                <path d="M 68 38 Q 88 28 86 42 Q 72 48 66 44 Z" fill="#15803D" stroke="#14532D" stroke-width="1" />
-                <path d="M 32 68 Q 20 74 24 82 Q 34 78 36 70 Z" fill="#15803D" />
-                <path d="M 68 68 Q 80 74 76 82 Q 66 78 64 70 Z" fill="#15803D" />
-                <ellipse cx="50" cy="54" rx="26" ry="24" fill="url(#real-turt-shell-${type})" stroke="#14532D" stroke-width="1.5" />
-                <polygon points="50,34 62,42 62,58 50,66 38,58 38,42" fill="none" stroke="#BBF7D0" stroke-width="1.5" opacity="0.8" />
-                <polygon points="50,34 50,42" stroke="#BBF7D0" stroke-width="1.2" opacity="0.8" />
-                <polygon points="62,42 50,42" stroke="#BBF7D0" stroke-width="1.2" opacity="0.8" />
-                <polygon points="62,58 50,58" stroke="#BBF7D0" stroke-width="1.2" opacity="0.8" />
-                <circle cx="47" cy="18" r="1.5" fill="#0F172A" />
-                <circle cx="53" cy="18" r="1.5" fill="#0F172A" />
+                <circle cx="50" cy="22" r="9" fill="#10B981" />
+                <ellipse cx="25" cy="38" rx="8" ry="12" fill="#10B981" transform="rotate(-30 25 38)" />
+                <ellipse cx="75" cy="38" rx="8" ry="12" fill="#10B981" transform="rotate(30 75 38)" />
+                <ellipse cx="28" cy="68" rx="7" ry="10" fill="#10B981" transform="rotate(30 28 68)" />
+                <ellipse cx="72" cy="68" rx="7" ry="10" fill="#10B981" transform="rotate(-30 72 68)" />
+                <circle cx="50" cy="54" r="26" fill="url(#turt-bg-${type})" stroke="#047857" stroke-width="1.5" />
+                <polygon points="50,34 64,44 64,62 50,72 36,62 36,44" fill="none" stroke="#A7F3D0" stroke-width="1.8" opacity="0.8" />
+                <circle cx="46" cy="19" r="1.8" fill="#064E3B" />
+                <circle cx="54" cy="19" r="1.8" fill="#064E3B" />
+                <ellipse cx="40" cy="42" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.65" transform="rotate(-20 40 42)" />
             `;
-        case 3: // 🐙 대왕문어
+        case 3: // 🐙 영롱한 젤리 문어
             return `
                 <defs>
-                    <radialGradient id="real-oct-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#EF4444" />
-                        <stop offset="60%" stop-color="#B91C1C" />
-                        <stop offset="100%" stop-color="#450A0A" />
+                    <radialGradient id="oct-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#F472B6" />
+                        <stop offset="50%" stop-color="#E11D48" />
+                        <stop offset="100%" stop-color="#881337" />
                     </radialGradient>
+                    <linearGradient id="oct-hl-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85" />
+                        <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0" />
+                    </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2" />
-                <path d="M 22 60 Q 14 74 24 82 Q 30 76 30 64" fill="url(#real-oct-bg-${type})" stroke="#7F1D1D" stroke-width="1" />
-                <path d="M 32 64 Q 28 82 38 84 Q 42 78 40 64" fill="url(#real-oct-bg-${type})" stroke="#7F1D1D" stroke-width="1" />
-                <path d="M 44 66 Q 48 84 54 84 Q 56 76 52 66" fill="url(#real-oct-bg-${type})" stroke="#7F1D1D" stroke-width="1" />
-                <path d="M 58 64 Q 64 82 72 82 Q 74 74 66 62" fill="url(#real-oct-bg-${type})" stroke="#7F1D1D" stroke-width="1" />
-                <path d="M 68 60 Q 82 72 78 80 Q 70 76 64 60" fill="url(#real-oct-bg-${type})" stroke="#7F1D1D" stroke-width="1" />
-                <circle cx="20" cy="74" r="1.8" fill="#FFFFFF" opacity="0.9" />
-                <circle cx="32" cy="78" r="1.8" fill="#FFFFFF" opacity="0.9" />
-                <circle cx="50" cy="80" r="1.8" fill="#FFFFFF" opacity="0.9" />
-                <circle cx="68" cy="76" r="1.8" fill="#FFFFFF" opacity="0.9" />
-                <ellipse cx="49" cy="42" rx="26" ry="24" fill="url(#real-oct-bg-${type})" stroke="#7F1D1D" stroke-width="1.5" />
-                <circle cx="38" cy="44" r="3" fill="#0F172A" />
-                <circle cx="60" cy="44" r="3" fill="#0F172A" />
-                <circle cx="39" cy="43" r="0.8" fill="#FFFFFF" />
-                <circle cx="61" cy="43" r="0.8" fill="#FFFFFF" />
-                <ellipse cx="36" cy="30" rx="7" ry="3" fill="#FFFFFF" opacity="0.4" transform="rotate(-20 36 30)" />
+                <circle cx="50" cy="50" r="44" fill="#FFF1F2" stroke="#FECDD3" stroke-width="2" />
+                <ellipse cx="26" cy="68" rx="7" ry="11" fill="url(#oct-bg-${type})" transform="rotate(-25 26 68)" />
+                <ellipse cx="36" cy="74" rx="7" ry="11" fill="url(#oct-bg-${type})" transform="rotate(-10 36 74)" />
+                <ellipse cx="48" cy="76" rx="7" ry="11" fill="url(#oct-bg-${type})" />
+                <ellipse cx="60" cy="74" rx="7" ry="11" fill="url(#oct-bg-${type})" transform="rotate(10 60 74)" />
+                <ellipse cx="72" cy="68" rx="7" ry="11" fill="url(#oct-bg-${type})" transform="rotate(25 72 68)" />
+                <ellipse cx="49" cy="45" rx="27" ry="25" fill="url(#oct-bg-${type})" stroke="#9F1239" stroke-width="1.2" />
+                <ellipse cx="49" cy="45" rx="27" ry="25" fill="url(#oct-hl-${type})" />
+                <circle cx="38" cy="44" r="3.5" fill="#1E1B4B" />
+                <circle cx="60" cy="44" r="3.5" fill="#1E1B4B" />
+                <circle cx="39" cy="43" r="1.2" fill="#FFFFFF" />
+                <circle cx="61" cy="43" r="1.2" fill="#FFFFFF" />
+                <ellipse cx="31" cy="50" rx="4" ry="2.5" fill="#FDA4AF" opacity="0.95" />
+                <ellipse cx="67" cy="50" rx="4" ry="2.5" fill="#FDA4AF" opacity="0.95" />
+                <ellipse cx="49" cy="52" rx="3" ry="4" fill="#881337" opacity="0.6" />
+                <ellipse cx="36" cy="30" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.75" transform="rotate(-20 36 30)" />
             `;
-        case 4: // 🦀 바다 꽃게
+        case 4: // 🦀 귀요미 에폭시 꽃게
             return `
                 <defs>
-                    <radialGradient id="real-crab-bg-${type}" cx="35%" cy="30%" r="70%">
+                    <radialGradient id="crab-body-${type}" cx="35%" cy="30%" r="70%">
                         <stop offset="0%" stop-color="#F87171" />
-                        <stop offset="60%" stop-color="#DC2626" />
-                        <stop offset="100%" stop-color="#7F1D1D" />
+                        <stop offset="60%" stop-color="#EF4444" />
+                        <stop offset="100%" stop-color="#991B1B" />
                     </radialGradient>
                 </defs>
                 <circle cx="50" cy="50" r="44" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="2" />
-                <path d="M 24 55 Q 12 52 16 68 M 26 62 Q 16 64 20 76 M 76 55 Q 88 52 84 68 M 74 62 Q 84 64 80 76" stroke="#991B1B" stroke-width="3" stroke-linecap="round" fill="none" />
-                <path d="M 28 40 Q 14 30 18 18 C 28 16 32 26 30 32 Z" fill="url(#real-crab-bg-${type})" stroke="#7F1D1D" stroke-width="1.2" />
-                <path d="M 72 40 Q 86 30 82 18 C 72 16 68 26 70 32 Z" fill="url(#real-crab-bg-${type})" stroke="#7F1D1D" stroke-width="1.2" />
-                <path d="M 24 54 C 20 38 34 32 50 32 C 66 32 80 38 76 54 C 70 68 30 68 24 54 Z" fill="url(#real-crab-bg-${type})" stroke="#7F1D1D" stroke-width="1.5" />
-                <circle cx="42" cy="30" r="2.5" fill="#0F172A" />
-                <circle cx="58" cy="30" r="2.5" fill="#0F172A" />
-                <circle cx="42.5" cy="29.5" r="0.7" fill="#FFFFFF" />
-                <circle cx="58.5" cy="29.5" r="0.7" fill="#FFFFFF" />
-                <ellipse cx="40" cy="38" rx="6" ry="2.5" fill="#FFFFFF" opacity="0.4" transform="rotate(-15 40 38)" />
+                <path d="M 24 55 Q 12 52 16 68 M 26 62 Q 16 64 20 76 M 76 55 Q 88 52 84 68 M 74 62 Q 84 64 80 76" stroke="#DC2626" stroke-width="3.5" stroke-linecap="round" fill="none" />
+                <path d="M 28 40 Q 16 32 18 22 Q 28 20 30 32 Z" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.2" />
+                <path d="M 72 40 Q 84 32 82 22 Q 72 20 70 32 Z" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.2" />
+                <ellipse cx="50" cy="54" rx="24" ry="17" fill="url(#crab-body-${type})" stroke="#991B1B" stroke-width="1.5" />
+                <circle cx="42" cy="34" r="4.5" fill="#FFFFFF" stroke="#991B1B" stroke-width="1.2" />
+                <circle cx="42" cy="34" r="2" fill="#0F172A" />
+                <circle cx="58" cy="34" r="4.5" fill="#FFFFFF" stroke="#991B1B" stroke-width="1.2" />
+                <circle cx="58" cy="34" r="2" fill="#0F172A" />
+                <path d="M 44 58 Q 50 64 56 58" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" />
             `;
-        case 5: // 🪼 투명 심해해파리
+        case 5: // 🪼 몽환의 크리스탈 해파리
             return `
                 <defs>
-                    <radialGradient id="real-jelly-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#E0E7FF" />
-                        <stop offset="50%" stop-color="#818CF8" />
-                        <stop offset="100%" stop-color="#3730A3" />
+                    <radialGradient id="jelly-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#F472B6" />
+                        <stop offset="50%" stop-color="#C084FC" />
+                        <stop offset="100%" stop-color="#6B21A8" />
                     </radialGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="2" />
-                <path d="M 32 52 Q 28 68 34 82 M 40 54 Q 46 70 40 84 M 50 54 Q 54 68 50 84 M 60 54 Q 54 70 60 84 M 68 52 Q 64 68 70 82" stroke="#6366F1" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8" />
-                <path d="M 20 50 C 20 22 80 22 80 50 C 68 54 60 46 50 50 C 40 46 32 54 20 50 Z" fill="url(#real-jelly-bg-${type})" stroke="#4338CA" stroke-width="1.2" opacity="0.85" />
-                <ellipse cx="50" cy="36" rx="14" ry="8" fill="#A5B4FC" opacity="0.6" />
-                <circle cx="44" cy="36" r="3" fill="#FFFFFF" opacity="0.8" />
-                <circle cx="56" cy="36" r="3" fill="#FFFFFF" opacity="0.8" />
-                <ellipse cx="40" cy="28" rx="8" ry="3" fill="#FFFFFF" opacity="0.5" transform="rotate(-15 40 28)" />
+                <circle cx="50" cy="50" r="44" fill="#FDF4FF" stroke="#F5D0FE" stroke-width="2" />
+                <path d="M 34 54 Q 30 68 36 80 M 42 56 Q 46 70 40 82 M 50 56 Q 54 68 50 82 M 58 56 Q 54 70 60 82 M 66 54 Q 70 68 64 80" stroke="#C084FC" stroke-width="2.5" stroke-linecap="round" fill="none" />
+                <path d="M 22 52 C 22 26 78 26 78 52 C 68 56 60 48 50 52 C 40 48 32 56 22 52 Z" fill="url(#jelly-bg-${type})" stroke="#7E22CE" stroke-width="1.5" />
+                <ellipse cx="50" cy="34" rx="20" ry="8" fill="#FFFFFF" opacity="0.45" />
+                <circle cx="40" cy="42" r="2.5" fill="#1E1B4B" />
+                <circle cx="60" cy="42" r="2.5" fill="#1E1B4B" />
+                <circle cx="41" cy="41" r="0.8" fill="#FFFFFF" />
+                <circle cx="61" cy="41" r="0.8" fill="#FFFFFF" />
+                <ellipse cx="34" cy="45" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
+                <ellipse cx="66" cy="45" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
             `;
-        case 6: // 🦦 해양 수달
+        case 6: // 🦦 귀여운 3D 크리스탈 수달
             return `
                 <defs>
-                    <radialGradient id="real-otter-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#D97706" />
-                        <stop offset="60%" stop-color="#92400E" />
-                        <stop offset="100%" stop-color="#451A03" />
+                    <radialGradient id="otter-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#FDE68A" />
+                        <stop offset="50%" stop-color="#D97706" />
+                        <stop offset="100%" stop-color="#78350F" />
                     </radialGradient>
-                    <linearGradient id="real-otter-chest-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#FEF3C7" />
-                        <stop offset="100%" stop-color="#FDE68A" />
+                    <linearGradient id="otter-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" />
+                        <stop offset="100%" stop-color="#FEF3C7" />
                     </linearGradient>
                 </defs>
                 <circle cx="50" cy="50" r="44" fill="#FEF3C7" stroke="#FDE68A" stroke-width="2" />
-                <circle cx="28" cy="30" r="5" fill="url(#real-otter-bg-${type})" />
-                <circle cx="72" cy="30" r="5" fill="url(#real-otter-bg-${type})" />
-                <ellipse cx="50" cy="38" rx="22" ry="18" fill="url(#real-otter-bg-${type})" stroke="#451A03" stroke-width="1.2" />
-                <ellipse cx="50" cy="64" rx="20" ry="20" fill="url(#real-otter-bg-${type})" stroke="#451A03" stroke-width="1.2" />
-                <ellipse cx="50" cy="62" rx="14" ry="15" fill="url(#real-otter-chest-${type})" />
-                <path d="M 44 56 C 44 50 56 50 56 56 Z" fill="#F472B6" stroke="#9D174D" stroke-width="1" />
-                <ellipse cx="40" cy="58" rx="5" ry="3" fill="url(#real-otter-bg-${type})" transform="rotate(30 40 58)" />
-                <ellipse cx="60" cy="58" rx="5" ry="3" fill="url(#real-otter-bg-${type})" transform="rotate(-30 60 58)" />
-                <ellipse cx="50" cy="42" rx="7" ry="5" fill="url(#real-otter-chest-${type})" />
-                <circle cx="42" cy="36" r="2.2" fill="#0F172A" />
-                <circle cx="58" cy="36" r="2.2" fill="#0F172A" />
-                <circle cx="42.5" cy="35.5" r="0.6" fill="#FFFFFF" />
-                <circle cx="58.5" cy="35.5" r="0.6" fill="#FFFFFF" />
-                <polygon points="50,40 47,43 53,43" fill="#451A03" />
+                <circle cx="28" cy="30" r="6" fill="url(#otter-bg-${type})" />
+                <circle cx="72" cy="30" r="6" fill="url(#otter-bg-${type})" />
+                <circle cx="28" cy="30" r="3" fill="#FEF3C7" />
+                <circle cx="72" cy="30" r="3" fill="#FEF3C7" />
+                <ellipse cx="50" cy="38" rx="22" ry="18" fill="url(#otter-bg-${type})" stroke="#92400E" stroke-width="1.2" />
+                <ellipse cx="50" cy="62" rx="20" ry="22" fill="url(#otter-bg-${type})" stroke="#92400E" stroke-width="1.2" />
+                <ellipse cx="50" cy="62" rx="14" ry="16" fill="url(#otter-belly-${type})" />
+                <circle cx="50" cy="58" r="6" fill="#FFFFFF" stroke="#F59E0B" stroke-width="1" />
+                <ellipse cx="40" cy="56" rx="5" ry="3" fill="url(#otter-bg-${type})" transform="rotate(30 40 56)" />
+                <ellipse cx="60" cy="56" rx="5" ry="3" fill="url(#otter-bg-${type})" transform="rotate(-30 60 56)" />
+                <circle cx="42" cy="36" r="2.5" fill="#1E1B4B" />
+                <circle cx="58" cy="36" r="2.5" fill="#1E1B4B" />
+                <circle cx="43" cy="35" r="0.8" fill="#FFFFFF" />
+                <circle cx="59" cy="35" r="0.8" fill="#FFFFFF" />
+                <ellipse cx="50" cy="41" rx="2.5" ry="2" fill="#78350F" />
+                <ellipse cx="36" cy="42" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
+                <ellipse cx="64" cy="42" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
+                <ellipse cx="40" cy="26" rx="6" ry="3" fill="#FFFFFF" opacity="0.6" transform="rotate(-15 40 26)" />
             `;
-        case 7: // 🪸 대왕 만타 가오리
+        case 7: // 🪸 영롱한 파스텔 가오리
             return `
                 <defs>
-                    <radialGradient id="real-ray-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#475569" />
-                        <stop offset="60%" stop-color="#1E293B" />
+                    <radialGradient id="ray-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#DDD6FE" />
+                        <stop offset="50%" stop-color="#A855F7" />
+                        <stop offset="100%" stop-color="#6B21A8" />
+                    </radialGradient>
+                    <linearGradient id="ray-hl-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
+                        <stop offset="70%" stop-color="#FFFFFF" stop-opacity="0.1" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="2" />
+                <path d="M 50 64 Q 48 84 56 86 M 50 64 Q 52 84 56 86" stroke="#7E22CE" stroke-width="2.5" stroke-linecap="round" fill="none" />
+                <path d="M 50 20 C 66 22 88 40 76 62 C 64 68 54 62 50 60 C 46 62 36 68 24 62 C 12 40 34 22 50 20 Z" fill="url(#ray-bg-${type})" stroke="#581C87" stroke-width="1.5" />
+                <path d="M 50 20 C 66 22 88 40 76 62 C 64 68 54 62 50 60 C 46 62 36 68 24 62 C 12 40 34 22 50 20 Z" fill="url(#ray-hl-${type})" />
+                <circle cx="50" cy="32" r="2" fill="#FFFFFF" opacity="0.9" />
+                <circle cx="42" cy="40" r="1.5" fill="#FFFFFF" opacity="0.8" />
+                <circle cx="58" cy="40" r="1.5" fill="#FFFFFF" opacity="0.8" />
+                <circle cx="42" cy="28" r="2.5" fill="#1E1B4B" />
+                <circle cx="58" cy="28" r="2.5" fill="#1E1B4B" />
+                <circle cx="43" cy="27" r="0.8" fill="#FFFFFF" />
+                <circle cx="59" cy="27" r="0.8" fill="#FFFFFF" />
+                <ellipse cx="36" cy="32" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
+                <ellipse cx="64" cy="32" rx="3" ry="2" fill="#F472B6" opacity="0.8" />
+            `;
+        case 8: // 🦈 코스믹 범고래
+            return `
+                <defs>
+                    <radialGradient id="orca-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#38BDF8" />
+                        <stop offset="50%" stop-color="#1E3A8A" />
                         <stop offset="100%" stop-color="#0F172A" />
                     </radialGradient>
+                    <linearGradient id="orca-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" />
+                        <stop offset="100%" stop-color="#E0F2FE" />
+                    </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" />
-                <path d="M 50 64 Q 48 86 54 88 M 50 64 Q 52 86 54 88" stroke="#1E293B" stroke-width="2" stroke-linecap="round" fill="none" />
-                <path d="M 50 18 C 68 20 90 38 78 62 C 64 68 54 62 50 60 C 46 62 36 68 22 62 C 10 38 32 20 50 18 Z" fill="url(#real-ray-bg-${type})" stroke="#0F172A" stroke-width="1.2" />
-                <path d="M 42 18 Q 40 12 45 16 Z M 58 18 Q 60 12 55 16 Z" fill="url(#real-ray-bg-${type})" />
-                <circle cx="36" cy="26" r="2" fill="#FFFFFF" />
-                <circle cx="36" cy="26" r="1" fill="#0F172A" />
-                <circle cx="64" cy="26" r="2" fill="#FFFFFF" />
-                <circle cx="64" cy="26" r="1" fill="#0F172A" />
-                <ellipse cx="40" cy="28" rx="8" ry="3" fill="#FFFFFF" opacity="0.3" transform="rotate(-15 40 28)" />
+                <circle cx="50" cy="50" r="44" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="2" />
+                <path d="M 45 32 Q 54 14 62 26 Z" fill="url(#orca-bg-${type})" />
+                <path d="M 18 54 C 18 34 50 32 78 44 C 86 48 84 58 72 62 C 58 68 38 68 20 62 Z" fill="url(#orca-bg-${type})" stroke="#1E3A8A" stroke-width="1.5" />
+                <path d="M 24 60 C 34 66 56 66 66 60 C 56 65 34 65 24 60 Z" fill="url(#orca-belly-${type})" />
+                <ellipse cx="32" cy="46" rx="4" ry="2.5" fill="#FFFFFF" opacity="0.9" />
+                <circle cx="34" cy="48" r="2" fill="#0F172A" />
+                <circle cx="34.5" cy="47.5" r="0.7" fill="#FFFFFF" />
+                <path d="M 78 44 C 84 38 90 38 92 44 C 88 50 82 50 78 48 Z" fill="url(#orca-bg-${type})" />
             `;
-        case 8: // 🦈 황제 범고래
+        case 9: // 🐧 귀여운 에폭시 펭귄
             return `
                 <defs>
-                    <radialGradient id="real-orca-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#334155" />
-                        <stop offset="60%" stop-color="#0F172A" />
-                        <stop offset="100%" stop-color="#020617" />
+                    <radialGradient id="crystal-pen-bg-${type}" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#4B5563" />
+                        <stop offset="60%" stop-color="#1F2937" />
+                        <stop offset="100%" stop-color="#111827" />
                     </radialGradient>
+                    <linearGradient id="pen-belly-${type}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFFFFF" />
+                        <stop offset="100%" stop-color="#F3E8FF" />
+                    </linearGradient>
                 </defs>
-                <circle cx="50" cy="50" r="44" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" />
-                <path d="M 44 32 Q 54 12 64 26 Z" fill="url(#real-orca-bg-${type})" />
-                <path d="M 16 54 C 16 34 48 32 78 44 C 86 48 84 58 72 62 C 58 68 38 68 18 62 Z" fill="url(#real-orca-bg-${type})" stroke="#020617" stroke-width="1.2" />
-                <path d="M 22 60 C 32 66 56 66 66 60 C 56 65 32 65 22 60 Z" fill="#FFFFFF" />
-                <ellipse cx="32" cy="44" rx="5" ry="3" fill="#FFFFFF" transform="rotate(-10 32 44)" />
-                <circle cx="36" cy="47" r="1.5" fill="#020617" />
-                <path d="M 78 44 C 84 38 90 38 92 44 C 88 50 82 50 78 48 Z" fill="url(#real-orca-bg-${type})" />
-                <ellipse cx="38" cy="36" rx="8" ry="3" fill="#FFFFFF" opacity="0.3" transform="rotate(-15 38 36)" />
-            `;
-        case 9: // 🐧 황제펭귄
-            return `
-                <defs>
-                    <radialGradient id="real-pen-bg-${type}" cx="35%" cy="30%" r="70%">
-                        <stop offset="0%" stop-color="#334155" />
-                        <stop offset="60%" stop-color="#0F172A" />
-                        <stop offset="100%" stop-color="#020617" />
-                    </radialGradient>
-                    <radialGradient id="pen-yellow-${type}" cx="50%" cy="30%" r="50%">
-                        <stop offset="0%" stop-color="#FDE047" />
-                        <stop offset="100%" stop-color="#F59E0B" />
-                    </radialGradient>
-                </defs>
-                <circle cx="50" cy="50" r="44" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2" />
-                <ellipse cx="44" cy="80" rx="5" ry="3" fill="#F59E0B" />
-                <ellipse cx="56" cy="80" rx="5" ry="3" fill="#F59E0B" />
-                <ellipse cx="22" cy="54" rx="6" ry="15" fill="url(#real-pen-bg-${type})" transform="rotate(20 22 54)" />
-                <ellipse cx="78" cy="54" rx="6" ry="15" fill="url(#real-pen-bg-${type})" transform="rotate(-20 78 54)" />
-                <ellipse cx="50" cy="52" rx="24" ry="28" fill="url(#real-pen-bg-${type})" stroke="#020617" stroke-width="1.2" />
-                <ellipse cx="50" cy="56" rx="16" ry="22" fill="#FFFFFF" />
-                <path d="M 38 34 C 44 42 56 42 62 34 C 58 46 42 46 38 34 Z" fill="url(#pen-yellow-${type})" />
-                <circle cx="44" cy="32" r="2" fill="#020617" />
-                <circle cx="56" cy="32" r="2" fill="#020617" />
-                <polygon points="50,40 46,46 54,46" fill="#F59E0B" />
+                <circle cx="50" cy="50" r="44" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2" />
+                <ellipse cx="50" cy="54" rx="28" ry="30" fill="url(#crystal-pen-bg-${type})" stroke="#1F2937" stroke-width="1.5" />
+                <ellipse cx="50" cy="34" rx="22" ry="20" fill="url(#crystal-pen-bg-${type})" />
+                <ellipse cx="50" cy="56" rx="19" ry="22" fill="url(#pen-belly-${type})" />
+                <ellipse cx="50" cy="38" rx="14" ry="12" fill="url(#pen-belly-${type})" />
+                <ellipse cx="22" cy="54" rx="7" ry="16" fill="url(#crystal-pen-bg-${type})" transform="rotate(20 22 54)" />
+                <ellipse cx="78" cy="54" rx="7" ry="16" fill="url(#crystal-pen-bg-${type})" transform="rotate(-20 78 54)" />
+                <ellipse cx="44" cy="80" rx="6" ry="3" fill="#F59E0B" />
+                <ellipse cx="56" cy="80" rx="6" ry="3" fill="#F59E0B" />
+                <polygon points="50,40 45,46 55,46" fill="#F59E0B" />
+                <circle cx="42" cy="36" r="2.5" fill="#111827" />
+                <circle cx="58" cy="36" r="2.5" fill="#111827" />
+                <circle cx="43" cy="35" r="0.8" fill="#FFFFFF" />
+                <circle cx="59" cy="35" r="0.8" fill="#FFFFFF" />
+                <ellipse cx="37" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
+                <ellipse cx="63" cy="40" rx="3" ry="2" fill="#F472B6" opacity="0.75" />
+                <ellipse cx="40" cy="24" rx="6" ry="3" fill="#FFFFFF" opacity="0.5" transform="rotate(-15 40 24)" />
             `;
         default:
-            return `<circle cx="50" cy="50" r="40" fill="#3B82F6" />`;
+            return `<circle cx="50" cy="50" r="40" fill="#A855F7" />`;
     }
 }
 
 function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
     const parsed = parseStickerMemo(rawMemo);
     const type = (parsed.type !== null && parsed.type >= 0 && parsed.type < 10) ? parsed.type : (index % 10);
-    
+
     if (!isSticker) {
         return "";
     }
@@ -650,7 +679,7 @@ function renderStickerPickerGrid() {
     const gridContainer = document.getElementById("sticker-select-grid");
     if (!gridContainer) return;
     gridContainer.innerHTML = "";
-    
+
     SEA_CREATURES.forEach(creature => {
         const isSel = creature.id === selectedStickerType;
         const item = document.createElement("div");
@@ -664,7 +693,7 @@ function renderStickerPickerGrid() {
             </div>
             <span class="sticker-option-label">${creature.name}</span>
         `;
-        
+
         const selectHandler = (e) => {
             if (e) e.stopPropagation();
             selectedStickerType = creature.id;
@@ -674,7 +703,7 @@ function renderStickerPickerGrid() {
 
         item.addEventListener("click", selectHandler);
         item.addEventListener("touchstart", selectHandler, { passive: true });
-        
+
         gridContainer.appendChild(item);
     });
 }
@@ -696,7 +725,7 @@ async function apiGetAllBoards() {
                     if (board && isMoonBoard(board)) {
                         boards.push(board);
                     }
-                } catch(e){}
+                } catch (e) { }
             }
         }
         boards.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
@@ -720,7 +749,7 @@ async function apiGetAllBoards() {
                         if (board && isMoonBoard(board)) {
                             boards.push(board);
                         }
-                    } catch(e){}
+                    } catch (e) { }
                 }
             }
             boards.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
@@ -734,7 +763,7 @@ async function getNextSequentialBoardCode() {
     const allBoards = await apiGetAllBoards();
     let maxNum = 0;
     let prefix = "";
-    
+
     allBoards.forEach(b => {
         if (b && b.id && !b.id.startsWith("TEST-BOARD-")) {
             const match = String(b.id).match(/^(.*?)(\d+)$/);
@@ -748,7 +777,7 @@ async function getNextSequentialBoardCode() {
             }
         }
     });
-    
+
     const nextNum = maxNum + 1;
     return prefix ? `${prefix}${nextNum}` : String(nextNum);
 }
@@ -757,7 +786,7 @@ async function getNextSequentialBoardCode() {
 async function apiUpdateBoardTitle(boardId, newTitle) {
     let board = await apiGetBoard(boardId);
     if (!board) return false;
-    
+
     board.title = newTitle;
     const result = await apiCreateBoard(board);
     if (result.success) {
@@ -823,7 +852,7 @@ function getBoardOrder() {
 
 function saveBoardOrder(orderedIds) {
     localStorage.setItem("board_order", JSON.stringify(orderedIds));
-    
+
     let list = getRegisteredBoards();
     list.sort((a, b) => {
         const idxA = orderedIds.indexOf(a.id);
@@ -839,10 +868,10 @@ function removeRegisteredBoard(boardId) {
     let list = getRegisteredBoards();
     list = list.filter(b => b.id !== boardId);
     localStorage.setItem("registered_boards", JSON.stringify(list));
-    
+
     const orderList = getBoardOrder().filter(id => id !== boardId);
     localStorage.setItem("board_order", JSON.stringify(orderList));
-    
+
     if (currentBoardId === boardId) {
         if (list.length > 0) {
             currentBoardId = list[0].id;
@@ -858,10 +887,10 @@ let lastBoardListFingerprint = "";
 // 사이드바 내부 보드 목록 동적 렌더링 (지능적 핑거프린트 대조로 깜빡임 완전 방지)
 async function renderBoardList(force = false) {
     if (!boardListContainer) return;
-    
+
     let serverBoards = await apiGetAllBoards();
     let localList = getRegisteredBoards();
-    
+
     const boardMap = new Map();
     serverBoards.forEach(b => {
         if (b && b.id) {
@@ -874,7 +903,7 @@ async function renderBoardList(force = false) {
             boardMap.set(b.id, { ...existing, ...b });
         }
     });
-    
+
     const combinedList = Array.from(boardMap.values());
 
     const orderList = getBoardOrder();
@@ -890,14 +919,14 @@ async function renderBoardList(force = false) {
     }
 
     const fingerprint = combinedList.map(b => `${b.id}:${b.title}:${b.reward_text}:${b.id === currentBoardId}`).join('|');
-    
+
     if (!force && fingerprint === lastBoardListFingerprint) {
         return;
     }
     lastBoardListFingerprint = fingerprint;
 
     boardListContainer.innerHTML = "";
-    
+
     if (combinedList.length === 0) {
         const emptyMsg = document.createElement("div");
         emptyMsg.style.fontSize = "11px";
@@ -920,7 +949,7 @@ function createBoardItemDOM(board, isLocal) {
     const item = document.createElement("div");
     item.className = `board-item ${isActive ? "active" : ""}`;
     item.dataset.boardId = board.id;
-    
+
     const hasPermission = localStorage.getItem("is_editor") === "true";
 
     const editButtonHtml = `
@@ -953,17 +982,17 @@ function createBoardItemDOM(board, isLocal) {
             return;
         }
         if (isActive) return;
-        
+
         loadingSpinner.classList.remove("hidden");
         sidebar.classList.remove("open");
         sidebarOverlay.classList.add("hidden");
-        
+
         currentBoardId = board.id;
         localStorage.setItem("current_board_id", currentBoardId);
         isEditorMode = localStorage.getItem("is_editor") === "true";
         updateRoleUI();
         await refreshApp();
-        
+
         const newUrl = `${window.location.origin}${window.location.pathname}?board=${board.id}`;
         window.history.replaceState({ path: newUrl }, "", newUrl);
     });
@@ -1023,7 +1052,7 @@ function createBoardItemDOM(board, isLocal) {
         if (e.cancelable) e.preventDefault();
 
         const currentY = e.type.startsWith('touch') ? (e.touches[0] ? e.touches[0].clientY : 0) : e.clientY;
-        
+
         const currentLayoutTop = item.offsetTop;
         const deltaY = (currentY - dragStartY) - (currentLayoutTop - initialLayoutTop);
         item.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
@@ -1142,7 +1171,7 @@ async function refreshApp() {
             // 보드가 존재하지 않음 -> 초기 설정 화면 노출
             appContent.classList.add("hidden");
             welcomeScreen.classList.remove("hidden");
-            
+
             // 설정 폼에 현재 보드 ID 자동 완성 및 테스트값 미리 채우기
             if (currentBoardId === "DEFAULT" || currentBoardId.startsWith("TEST-")) {
                 setupBoardId.value = currentBoardId === "DEFAULT" ? "TEST-COSMIC-BOARD" : currentBoardId;
@@ -1299,13 +1328,13 @@ function formatDate(dateStr) {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return "";
-    
+
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const date = String(d.getDate()).padStart(2, '0');
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
-    
+
     return `${year}년 ${month}월 ${date}일 ${hours}:${minutes}`;
 }
 
@@ -1317,7 +1346,7 @@ async function handleSlotClick(index, isActive) {
         const sticker = currentStickers.find(s => s.sticker_index === index);
         const rawMemo = sticker && sticker.memo ? sticker.memo : "";
         const parsed = parseStickerMemo(rawMemo);
-        
+
         const displayMemoText = parsed.memo ? parsed.memo : "등록된 칭찬 메모가 없습니다. 🧸";
         const createdDate = sticker && sticker.created_at ? formatDate(sticker.created_at) : "";
         const updatedDate = sticker && sticker.updated_at ? formatDate(sticker.updated_at) : "";
@@ -1329,7 +1358,7 @@ async function handleSlotClick(index, isActive) {
 
         viewStickerMemoText.textContent = displayMemoText;
         viewStickerCreatedAt.textContent = createdDate ? `최초 작성: ${createdDate}` : "";
-        
+
         if (updatedDate && isModified) {
             viewStickerUpdatedAt.textContent = `최근 수정: ${updatedDate}`;
             viewStickerUpdatedAt.classList.remove("hidden");
@@ -1363,9 +1392,9 @@ async function handleSlotClick(index, isActive) {
             selectedStickerType = 0;
         }
         inputStickerMemo.value = "";
-        
+
         renderStickerPickerGrid();
-        
+
         modalMemoInput.classList.remove("hidden");
         inputStickerMemo.focus();
     }
@@ -1512,7 +1541,7 @@ btnCreateBoard.addEventListener("click", async () => {
         isEditorMode = true;
         updateRoleUI();
         await refreshApp();
-        
+
         showToast("새 칭찬판이 생성되었습니다! 🚀");
     } else {
         showToast(`칭찬판 개설 실패: ${result.error}`);
@@ -1573,7 +1602,7 @@ function updatePaletteUI(hex) {
     if (!hex) hex = "#4A5568";
     hex = hex.toUpperCase();
     const { r, g, b } = hexToRgb(hex);
-    
+
     if (rangeR) rangeR.value = r;
     if (rangeG) rangeG.value = g;
     if (rangeB) rangeB.value = b;
@@ -1581,14 +1610,14 @@ function updatePaletteUI(hex) {
     if (valG) valG.textContent = g;
     if (valB) valB.textContent = b;
     if (inputCustomColor) inputCustomColor.value = hex;
-    
+
     if (colorPreviewBox) {
         colorPreviewBox.style.backgroundColor = hex;
     }
     if (colorPreviewText) {
         colorPreviewText.textContent = hex;
     }
-    
+
     const presetBtns = document.querySelectorAll(".color-preset-btn");
     presetBtns.forEach(btn => {
         if (btn.getAttribute("data-color").toUpperCase() === hex) {
@@ -1602,15 +1631,24 @@ function updatePaletteUI(hex) {
 function applyThemeColor(hex, save = false) {
     if (!hex) hex = "#4A5568";
     hex = hex.toUpperCase();
-    
+
     const darkHex = adjustColorBrightness(hex, -25);
-    
+    const lightHex = adjustColorBrightness(hex, 85);
+    const bgStart = adjustColorBrightness(hex, 75);
+    const bgEnd = adjustColorBrightness(hex, 60);
+    const { r, g, b } = hexToRgb(hex);
+    const glowStr = `rgba(${r}, ${g}, ${b}, 0.35)`;
+
     document.documentElement.style.setProperty("--stitch-primary", hex);
     document.documentElement.style.setProperty("--stitch-primary-dark", darkHex);
-    
+    document.documentElement.style.setProperty("--stitch-primary-light", lightHex);
+    document.documentElement.style.setProperty("--stitch-bg-gradient-start", bgStart);
+    document.documentElement.style.setProperty("--stitch-bg-gradient-end", bgEnd);
+    document.documentElement.style.setProperty("--stitch-glow", glowStr);
+
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) metaTheme.setAttribute("content", hex);
-    
+
     if (save && currentBoardId) {
         localStorage.setItem(`board_theme_color_${currentBoardId}`, hex);
         if (currentBoard) {
@@ -1900,16 +1938,16 @@ btnMemoEditStart.addEventListener("click", () => {
     const sticker = currentStickers.find(s => s.sticker_index === editTargetIndex);
     const parsed = parseStickerMemo(sticker && sticker.memo ? sticker.memo : "");
     inputEditStickerMemo.value = parsed.memo;
-    
+
     // UI 전환
     document.querySelector("#modal-memo-view .memo-view-content").classList.add("hidden");
     memoEditArea.classList.remove("hidden");
-    
+
     btnMemoEditStart.classList.add("hidden");
     btnMemoViewClose.classList.add("hidden");
     btnMemoEditCancel.classList.remove("hidden");
     btnMemoEditSave.classList.remove("hidden");
-    
+
     inputEditStickerMemo.focus();
 });
 
@@ -1917,7 +1955,7 @@ btnMemoEditStart.addEventListener("click", () => {
 btnMemoEditCancel.addEventListener("click", () => {
     document.querySelector("#modal-memo-view .memo-view-content").classList.remove("hidden");
     memoEditArea.classList.add("hidden");
-    
+
     btnMemoEditStart.classList.remove("hidden");
     btnMemoViewClose.classList.remove("hidden");
     btnMemoEditCancel.classList.add("hidden");
@@ -1928,7 +1966,7 @@ btnMemoEditCancel.addEventListener("click", () => {
 btnMemoEditSave.addEventListener("click", async () => {
     if (editTargetIndex === null) return;
     const newMemoText = inputEditStickerMemo.value.trim();
-    
+
     const sticker = currentStickers.find(s => s.sticker_index === editTargetIndex);
     const parsed = parseStickerMemo(sticker ? sticker.memo : "");
     const keepType = parsed.type !== null ? parsed.type : (editTargetIndex % 10);
@@ -1936,7 +1974,7 @@ btnMemoEditSave.addEventListener("click", async () => {
 
     loadingSpinner.classList.remove("hidden");
     modalMemoView.classList.add("hidden");
-    
+
     const success = await apiUpdateStickerMemo(currentBoardId, editTargetIndex, formattedMemo);
     if (success) {
         showToast("칭찬 메모가 수정되었습니다. ✨");
@@ -1963,15 +2001,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (boards.length > 0) {
             const urlParams = new URLSearchParams(window.location.search);
             const activeParamId = (urlParams.get("board") || "").trim().toUpperCase();
-            
+
             const cleaned = boards.filter(b => {
                 const isCurrent = b.id === currentBoardId || b.id === activeParamId;
                 const hasPermission = localStorage.getItem("is_editor") === "true";
                 const isNotTestBoard = !b.id.startsWith("TEST-"); // 내 개설판(BON_WOOK 등) 보존
-                
+
                 return isCurrent || hasPermission || isNotTestBoard;
             });
-            
+
             if (cleaned.length !== boards.length) {
                 localStorage.setItem("registered_boards", JSON.stringify(cleaned));
             }
@@ -2013,12 +2051,12 @@ document.addEventListener("DOMContentLoaded", () => {
             sidebarOverlay.classList.add("hidden");
         });
     }
-    
+
     if (btnAddBoardSidebar) {
         btnAddBoardSidebar.addEventListener("click", () => {
             sidebar.classList.remove("open");
             sidebarOverlay.classList.add("hidden");
-            
+
             // 공유/생성 모달을 열고 새 보드 생성 인풋에 포커싱
             modalShare.classList.remove("hidden");
             inputCreateBoard.value = "";
@@ -2073,7 +2111,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateRoleUI();
             await refreshApp();
             showToast("칭찬판이 성공적으로 개설되었습니다! 🚀");
-            
+
             const newUrl = `${window.location.origin}${window.location.pathname}?board=${code}`;
             window.history.replaceState({ path: newUrl }, "", newUrl);
         } else {

@@ -6,6 +6,11 @@
 :root {
     --stitch-primary: #4A5568; /* slate blue-gray */
     --stitch-primary-dark: #2D3748; /* charcoal */
+    --stitch-primary-light: #F1F5F9;
+    --stitch-bg-gradient-start: #E2DCD5;
+    --stitch-bg-gradient-end: #CBD5E1;
+    --stitch-glow: rgba(74, 85, 104, 0.25);
+    
     --stitch-light-sky: #E2E8F0;
     --stitch-pink: #F87171; /* soft pink */
     --stitch-dark: #1A202C;
@@ -47,13 +52,14 @@ input, textarea, [contenteditable="true"] {
 
 body {
     font-family: var(--font-app);
-    background-color: #E2DCD5; /* cozy warm background */
+    background: linear-gradient(135deg, var(--stitch-bg-gradient-start, #E2DCD5) 0%, var(--stitch-bg-gradient-end, #CBD5E1) 100%);
     color: var(--text-primary);
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background 0.35s ease;
 }
 
 /* 3. 모바일 앱 형태의 컨테이너 설계 (Desktop 대응) */
