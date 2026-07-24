@@ -31,8 +31,8 @@ function isMoonBoard(b) {
     const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
     const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
     if (idStr.startsWith("TEST-BOARD-") || idStr === "TEST-BOARD") return false;
-    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || titleStr.includes("채소")) return false;
-    if (idStr.startsWith("CAT") || idStr.includes("KITTY") || titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
+    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") || titleStr.includes("채소") || titleStr.includes("야채") || titleStr.includes("당근")) return false;
+    if (idStr === "CAT-BOARD" || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") || titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
     return true;
 }
 
@@ -815,28 +815,29 @@ async function apiGetAllBoards() {
     }
 }
 
-// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1, 예: BON_WOOK1 -> BON_WOOK2)
+// 다음 순차적 보드 코드 생성 (기존 보드 중 마지막 숫자 + 1, 예: BON_WOOK_1, BON_WOOK_2)
 async function getNextSequentialBoardCode() {
     const allBoards = await apiGetAllBoards();
     let maxNum = 0;
-    let prefix = "";
+    const basePrefix = "BON_WOOK_";
 
     allBoards.forEach(b => {
-        if (b && b.id && !b.id.startsWith("TEST-BOARD-")) {
-            const match = String(b.id).match(/^(.*?)(\d+)$/);
-            if (match) {
-                const currentPrefix = match[1];
-                const num = parseInt(match[2], 10);
-                if (!isNaN(num) && num > maxNum) {
-                    maxNum = num;
-                    if (currentPrefix) prefix = currentPrefix;
+        if (b && b.id) {
+            const idStr = String(b.id).toUpperCase();
+            if (idStr.startsWith("BON_WOOK_") || idStr.startsWith("BON_WOOK")) {
+                const match = idStr.match(/BON_WOOK_?(\d+)$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (!isNaN(num) && num > maxNum) {
+                        maxNum = num;
+                    }
                 }
             }
         }
     });
 
     const nextNum = maxNum + 1;
-    return prefix ? `${prefix}${nextNum}` : String(nextNum);
+    return `${basePrefix}${nextNum}`;
 }
 
 // 보드 이름 수정 API
