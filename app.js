@@ -30,7 +30,7 @@ function isMoonBoard(b) {
     if (!b) return false;
     const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
     const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
-    if (idStr.startsWith("TEST-BOARD-") || idStr === "TEST-BOARD") return false;
+    if (idStr.startsWith("TEST-BOARD-") || idStr.startsWith("TEST_BOARD") || idStr === "TEST-BOARD" || idStr === "TEST_BOARD") return false;
     if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") || titleStr.includes("채소") || titleStr.includes("야채") || titleStr.includes("당근")) return false;
     if (idStr === "CAT-BOARD" || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") || titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
     return true;
@@ -815,31 +815,33 @@ async function apiGetAllBoards() {
     }
 }
 
-// 다음 순차적 보드 코드 생성 (해당 스티커판의 기존 코드에 _x(x는 자연수)를 붙여 생성)
+// 다음 순차적 보드 코드 생성 (기존 보드 BON_WOOK -> 두번째 보드는 BON_WOOK_1, 세번째는 BON_WOOK_2)
 async function getNextSequentialBoardCode(baseBoardId) {
     const allBoards = await apiGetAllBoards();
     let sourceId = baseBoardId || currentBoardId || "BON_WOOK";
-    if (sourceId === "DEFAULT" || sourceId === "TEST-COSMIC-BOARD") {
+    if (sourceId === "DEFAULT" || sourceId === "TEST-COSMIC-BOARD" || sourceId === "1") {
         sourceId = "BON_WOOK";
     }
     
-    let basePrefix = String(sourceId).trim().toUpperCase().replace(/_\d+$/, "");
+    let basePrefix = String(sourceId).trim().toUpperCase();
+    basePrefix = basePrefix.replace(/_\d+$/, "").replace(/\d+$/, "");
     if (basePrefix.endsWith("_")) {
         basePrefix = basePrefix.slice(0, -1);
     }
-    if (!basePrefix) basePrefix = "BON_WOOK";
+    if (!basePrefix || basePrefix === "1") basePrefix = "BON_WOOK";
 
     let maxNum = 0;
 
     allBoards.forEach(b => {
         if (b && b.id) {
-            const idStr = String(b.id).toUpperCase();
-            const regex = new RegExp(`^${basePrefix.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}_(\\d+)$`, "i");
-            const match = idStr.match(regex);
-            if (match) {
-                const num = parseInt(match[1], 10);
-                if (!isNaN(num) && num > maxNum) {
-                    maxNum = num;
+            const idStr = String(b.id).trim().toUpperCase();
+            if (idStr.startsWith(basePrefix)) {
+                const match = idStr.match(new RegExp(`^${basePrefix.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}_?(\\d+)$`, "i"));
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (!isNaN(num) && num > maxNum) {
+                        maxNum = num;
+                    }
                 }
             }
         }
@@ -1273,7 +1275,7 @@ async function refreshApp() {
             // 설정 폼에 현재 보드 ID 자동 완성 및 테스트값 미리 채우기
             if (currentBoardId === "DEFAULT" || currentBoardId.startsWith("TEST-")) {
                 setupBoardId.value = currentBoardId === "DEFAULT" ? "TEST-COSMIC-BOARD" : currentBoardId;
-                setupTitle.value = "우주 칭찬나라 테스트판 💖";
+                setupTitle.value = "스티커판 💖";
                 setupTargetCount.value = "30";
                 setupReward.value = "맛있는 디저트 데이트! 🍦";
                 setupPin.value = "1234";
@@ -1367,7 +1369,7 @@ async function refreshApp() {
         }
 
         // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
-        const savedAppTitle = (currentBoard && currentBoard.app_title) || localStorage.getItem(`app_title_${currentBoardId}`) || localStorage.getItem("global_app_title") || "우주 칭찬나라";
+        const savedAppTitle = (currentBoard && currentBoard.app_title) || localStorage.getItem(`app_title_${currentBoardId}`) || localStorage.getItem("global_app_title") || "스티커판";
         if (appMainLogo) appMainLogo.textContent = savedAppTitle;
         if (editAppTitle) editAppTitle.value = savedAppTitle;
         if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
@@ -1903,7 +1905,7 @@ btnSettingsSave.addEventListener("click", async () => {
 
     const updated = {
         ...currentBoard,
-        app_title: newAppTitle || (currentBoard && currentBoard.app_title) || "우주 칭찬나라",
+        app_title: newAppTitle || (currentBoard && currentBoard.app_title) || "스티커판",
         editor_pin: newPin || currentBoard.editor_pin,
         reader_role_name: newReaderName || "남자친구 모드 (조회 전용)",
         editor_role_name: newEditorName || "여자친구 모드 (부착 가능)"
