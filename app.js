@@ -186,6 +186,13 @@ async function apiGetBoard(boardId) {
                     mergedData.reader_role_name = data.reader_role_name || cachedObj.reader_role_name;
                     mergedData.editor_role_name = data.editor_role_name || cachedObj.editor_role_name;
                 }
+                // [명칭 소독 및 일괄 통일] 레거시 및 DB 타이틀 내 우주/칭찬나라/스티커핀 명칭을 스티커판으로 자동 치환
+                if (mergedData.title && (mergedData.title.includes("우주") || mergedData.title.includes("칭찬나라") || mergedData.title.includes("스티커핀"))) {
+                    mergedData.title = "스티커판";
+                }
+                if (mergedData.app_title && (mergedData.app_title.includes("우주") || mergedData.app_title.includes("칭찬나라") || mergedData.app_title.includes("스티커핀"))) {
+                    mergedData.app_title = "스티커판";
+                }
                 localStorage.setItem(`board_${boardId}`, JSON.stringify(mergedData));
                 return mergedData;
             }
@@ -897,7 +904,12 @@ async function openBoardEditModal(board) {
 function getRegisteredBoards() {
     const list = localStorage.getItem("registered_boards");
     const parsed = list ? JSON.parse(list) : [];
-    return parsed.filter(b => isMoonBoard(b));
+    return parsed.filter(b => isMoonBoard(b)).map(b => {
+        if (b && b.title && (b.title.includes("우주") || b.title.includes("칭찬나라") || b.title.includes("스티커핀"))) {
+            b.title = "스티커판";
+        }
+        return b;
+    });
 }
 
 function addRegisteredBoard(boardId, title, rewardText) {
@@ -1302,6 +1314,14 @@ async function refreshApp() {
 
         // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
         welcomeScreen.classList.add("hidden");
+        if (board) {
+            if (board.title && (board.title.includes("우주") || board.title.includes("칭찬나라") || board.title.includes("스티커핀"))) {
+                board.title = "스티커판";
+            }
+            if (board.app_title && (board.app_title.includes("우주") || board.app_title.includes("칭찬나라") || board.app_title.includes("스티커핀"))) {
+                board.app_title = "스티커판";
+            }
+        }
         currentBoard = board;
         if (board && board.editor_pin) {
             localStorage.setItem(`board_pin_${board.id}`, board.editor_pin);
@@ -1384,7 +1404,12 @@ async function refreshApp() {
         }
 
         // 5. 모달 내의 필드 업데이트 (현재 설정 대입)
-        const savedAppTitle = (currentBoard && currentBoard.app_title) || localStorage.getItem(`app_title_${currentBoardId}`) || localStorage.getItem("global_app_title") || "스티커판";
+        let savedAppTitle = (currentBoard && currentBoard.app_title) || localStorage.getItem(`app_title_${currentBoardId}`) || localStorage.getItem("global_app_title") || "스티커판";
+        if (savedAppTitle.includes("우주") || savedAppTitle.includes("칭찬나라") || savedAppTitle.includes("스티커핀")) {
+            savedAppTitle = "스티커판";
+            localStorage.setItem("global_app_title", "스티커판");
+            localStorage.setItem(`app_title_${currentBoardId}`, "스티커판");
+        }
         if (appMainLogo) appMainLogo.textContent = savedAppTitle;
         if (editAppTitle) editAppTitle.value = savedAppTitle;
         if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
