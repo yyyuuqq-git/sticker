@@ -1166,16 +1166,31 @@ function createBoardItemDOM(board, isLocal) {
                 .filter(Boolean);
 
             saveBoardOrder(newOrderList);
+
+            setTimeout(() => {
+                isReorderDrag = false;
+            }, 100);
+        } else {
+            isReorderDrag = false;
+        }
+    };
+
+    const endPressHandler = () => {
+        if (!isDragging && pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
         }
     };
 
     item.addEventListener("mousedown", startDragHandler);
     item.addEventListener("mousemove", cancelTimerHandler);
-    item.addEventListener("mouseleave", () => { if (!isDragging && pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+    item.addEventListener("mouseup", endPressHandler);
+    item.addEventListener("mouseleave", endPressHandler);
 
     item.addEventListener("touchstart", startDragHandler, { passive: true });
     item.addEventListener("touchmove", cancelTimerHandler, { passive: true });
-    item.addEventListener("touchcancel", () => { if (!isDragging && pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+    item.addEventListener("touchend", endPressHandler);
+    item.addEventListener("touchcancel", endPressHandler);
 
     const btnEdit = item.querySelector(".btn-edit-board");
     if (btnEdit) {
