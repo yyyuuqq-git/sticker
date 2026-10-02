@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 스티치 칭찬나라 JavaScript 핵심 기능 제어
 // ==========================================
 
@@ -25,23 +25,48 @@ if (!isLocalMode) {
     console.log("Supabase 설정이 비어있어 '로컬 모드(기기 브라우저 저장)'로 구동됩니다.");
 }
 
-// 달 칭찬스티커 전용 보드 판별 (채소가게, 고양이 보드 및 테스트 보드 자동 제외)
+// 달 칭찬스티커 전용 보드 판별 (수산시장/물고기, 채소가게, 고양이 및 테스트 보드 100% 격리 - 프라이버시 엄격 보호)
 function isMoonBoard(b) {
     if (!b) return false;
     const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
     const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
-    if (idStr.startsWith("TEST-BOARD-") || idStr.startsWith("TEST_BOARD") || idStr === "TEST-BOARD" || idStr === "TEST_BOARD") return false;
-    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") || titleStr.includes("채소") || titleStr.includes("야채") || titleStr.includes("당근")) return false;
-    if (idStr === "CAT-BOARD" || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") || titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
+    
+    // 1. 테스트 보드 배제 (TEST_BOARD_x, TEST-BOARD-xxx 등, 레거시 TEST-COSMIC-BOARD는 허용)
+    if (idStr.startsWith("TEST-BOARD") || idStr.startsWith("TEST_BOARD") || idStr === "TEST-BOARD" || idStr === "TEST_BOARD") return false;
+    if (idStr.startsWith("TEST_") && !idStr.includes("COSMIC")) return false;
+    if (titleStr.includes("테스트") && !idStr.includes("COSMIC") && !titleStr.includes("우주") && !titleStr.includes("달")) return false;
+
+    // 2. 수산시장 / 물고기 / 싱싱 어류 보드 배제 (0427, 양건, FISH 등 100% 프라이버시 격리)
+    if (idStr === "0427" || titleStr.includes("양건") || idStr.startsWith("FISH") || idStr.includes("FISH") || 
+        titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") || 
+        titleStr.includes("어시장") || titleStr.includes("광어") || titleStr.includes("우럭") || 
+        titleStr.includes("연어") || titleStr.includes("고등어") || titleStr.includes("참치") || 
+        titleStr.includes("문어") || titleStr.includes("오징어") || titleStr.includes("새우") || 
+        titleStr.includes("해산물") || titleStr.includes("바다") || titleStr.includes("츄르")) return false;
+
+    // 3. 채소가게 보드 배제 (CHAEDO_, VEGE_ 등)
+    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") || 
+        titleStr.includes("채소") || titleStr.includes("야채") || titleStr.includes("당근") || titleStr.includes("채건")) return false;
+
+    // 4. 레거시 고양이 보드 배제 (CAT-BOARD, KITTY, MEOW, 고양이, 야옹 등)
+    if (idStr === "CAT-BOARD" || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") || 
+        titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
+
     return true;
 }
 
 let initialBoardId = localStorage.getItem("current_board_id");
-if (initialBoardId && !isMoonBoard(initialBoardId)) {
-    initialBoardId = "TEST-COSMIC-BOARD";
+if (!initialBoardId || !isMoonBoard(initialBoardId)) {
+    const regList = (function() {
+        try {
+            const list = JSON.parse(localStorage.getItem("registered_boards") || "[]");
+            return list.filter(b => isMoonBoard(b));
+        } catch(e) { return []; }
+    })();
+    initialBoardId = (regList.length > 0) ? regList[0].id : "BON_WOOK";
     localStorage.setItem("current_board_id", initialBoardId);
 }
-let currentBoardId = initialBoardId || "TEST-COSMIC-BOARD";
+let currentBoardId = initialBoardId || "BON_WOOK";
 let currentBoard = null;
 let currentStickers = [];
 let isEditorMode = localStorage.getItem("is_editor") === "true";
@@ -904,7 +929,11 @@ async function openBoardEditModal(board) {
 function getRegisteredBoards() {
     const list = localStorage.getItem("registered_boards");
     const parsed = list ? JSON.parse(list) : [];
-    return parsed.filter(b => isMoonBoard(b)).map(b => {
+    const filtered = parsed.filter(b => isMoonBoard(b));
+    if (parsed.length !== filtered.length) {
+        localStorage.setItem("registered_boards", JSON.stringify(filtered));
+    }
+    return filtered.map(b => {
         if (b && b.title && (b.title.includes("우주") || b.title.includes("칭찬나라") || b.title.includes("스티커핀"))) {
             b.title = "스티커판";
         }
@@ -985,7 +1014,7 @@ async function renderBoardList(force = false) {
         }
     });
 
-    const combinedList = Array.from(boardMap.values());
+    const combinedList = Array.from(boardMap.values()).filter(b => isMoonBoard(b));
 
     const orderList = getBoardOrder();
     if (orderList.length > 0) {
@@ -1280,12 +1309,21 @@ async function refreshApp() {
     try {
         // 1. 보드 정보 로드
         let board = await apiGetBoard(currentBoardId);
-        if (!board) {
+        if (!board || !isMoonBoard(board)) {
             const registered = getRegisteredBoards();
-            if (registered.length > 0) {
+            if (registered.length > 0 && isMoonBoard(registered[0])) {
                 currentBoardId = registered[0].id;
                 localStorage.setItem("current_board_id", currentBoardId);
                 board = await apiGetBoard(currentBoardId);
+            } else {
+                currentBoardId = "BON_WOOK";
+                localStorage.setItem("current_board_id", currentBoardId);
+                board = await apiGetBoard(currentBoardId);
+                if (!board) {
+                    currentBoardId = "TEST-COSMIC-BOARD";
+                    localStorage.setItem("current_board_id", currentBoardId);
+                    board = await apiGetBoard(currentBoardId);
+                }
             }
         }
         if (!board && (currentBoardId === "DEFAULT" || !currentBoardId)) {
@@ -2150,6 +2188,33 @@ btnMemoEditSave.addEventListener("click", async () => {
     }
 });
 
+// 모든 모달 배경(바탕/어두운 영역) 클릭 시 모달 닫기 이벤트 핸들러
+document.querySelectorAll(".modal-overlay").forEach(overlay => {
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+            overlay.classList.add("hidden");
+            
+            if (overlay.id === "modal-memo-view") {
+                editTargetIndex = null;
+                const memoViewContent = document.querySelector("#modal-memo-view .memo-view-content");
+                if (memoViewContent) memoViewContent.classList.remove("hidden");
+                if (memoEditArea) memoEditArea.classList.add("hidden");
+                if (btnMemoEditCancel) btnMemoEditCancel.classList.add("hidden");
+                if (btnMemoEditSave) btnMemoEditSave.classList.add("hidden");
+                if (btnMemoViewClose) btnMemoViewClose.classList.remove("hidden");
+            } else if (overlay.id === "modal-memo-input") {
+                memoTargetIndex = null;
+            } else if (overlay.id === "modal-delete") {
+                deleteTargetIndex = null;
+                deleteTargetBoardId = null;
+            } else if (overlay.id === "modal-pin") {
+                const pinError = document.getElementById("pin-error");
+                if (pinError) pinError.classList.add("hidden");
+            }
+        }
+    });
+});
+
 // ==========================================
 // 9. 앱 초기 구동 및 실시간 데이터 싱크 폴링
 // ==========================================
@@ -2158,23 +2223,33 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem("board_DEFAULT");
     localStorage.removeItem("stickers_DEFAULT");
 
-    // [소독 패치] 모바일 기기 로컬스토리지 내 자동 누적된 타인의 테스트 칭찬판 찌꺼기 정리
+    // [소독 패치] 로컬스토리지 내 타 폴더 및 테스트 칭찬판 찌꺼기 100% 완전 정제 (프라이버시 보호)
     try {
         const boards = JSON.parse(localStorage.getItem("registered_boards") || "[]");
-        if (boards.length > 0) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const activeParamId = (urlParams.get("board") || "").trim().toUpperCase();
+        const cleaned = boards.filter(b => isMoonBoard(b));
+        localStorage.setItem("registered_boards", JSON.stringify(cleaned));
 
-            const cleaned = boards.filter(b => {
-                const isCurrent = b.id === currentBoardId || b.id === activeParamId;
-                const hasPermission = localStorage.getItem("is_editor") === "true";
-                const isNotTestBoard = !b.id.startsWith("TEST-"); // 내 개설판(BON_WOOK 등) 보존
+        // 현재 선택된 보드가 달 보드가 아니면 안전한 달 보드로 강제 전환
+        let curId = localStorage.getItem("current_board_id");
+        if (!curId || !isMoonBoard(curId)) {
+            const fallbackId = (cleaned.length > 0) ? cleaned[0].id : "BON_WOOK";
+            localStorage.setItem("current_board_id", fallbackId);
+            currentBoardId = fallbackId;
+        }
 
-                return isCurrent || hasPermission || isNotTestBoard;
-            });
+        // 보드 정렬 순서 정제
+        const order = JSON.parse(localStorage.getItem("board_order") || "[]");
+        const cleanedOrder = order.filter(id => isMoonBoard(id));
+        localStorage.setItem("board_order", JSON.stringify(cleanedOrder));
 
-            if (cleaned.length !== boards.length) {
-                localStorage.setItem("registered_boards", JSON.stringify(cleaned));
+        // 타 앱 보드 개별 캐시 찌꺼기 완전 삭제
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && (k.startsWith("board_") || k.startsWith("stickers_"))) {
+                const subId = k.replace("board_", "").replace("stickers_", "");
+                if (!isMoonBoard(subId)) {
+                    localStorage.removeItem(k);
+                }
             }
         }
     } catch (e) {
