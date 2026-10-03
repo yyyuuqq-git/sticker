@@ -4,45 +4,58 @@
 
 /* 1. 디자인 토큰 및 변수 */
 :root {
-    --stitch-primary: #4A5568; /* slate blue-gray */
-    --stitch-primary-dark: #2D3748; /* charcoal */
+    --stitch-primary: #4A5568;
+    /* slate blue-gray */
+    --stitch-primary-dark: #2D3748;
+    /* charcoal */
     --stitch-primary-light: #F1F5F9;
     --stitch-bg-gradient-start: #E2DCD5;
     --stitch-bg-gradient-end: #CBD5E1;
     --stitch-glow: rgba(74, 85, 104, 0.25);
-    
+
     --stitch-light-sky: #E2E8F0;
-    --stitch-pink: #F87171; /* soft pink */
+    --stitch-pink: #F87171;
+    /* soft pink */
     --stitch-dark: #1A202C;
-    --stitch-bg-light: #FAF6F0; /* cozy cream */
+    --stitch-bg-light: #FAF6F0;
+    /* cozy cream */
     --stitch-card-bg: #FFFFFF;
-    
-    --accent-yellow: #F59E0B; /* warm gold */
+
+    --accent-yellow: #F59E0B;
+    /* warm gold */
     --soft-pink: #FEF2F2;
     --soft-blue: #EDF2F7;
-    
+
     --text-primary: #2D3748;
     --text-muted: #718096;
     --border-color: #CBD5E0;
-    
+
     --font-app: 'Nunito', 'Jua', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* 2. 전역 스타일 초기화 & iOS 텍스트 선택 방지 */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
-    -webkit-user-select: none; /* iOS Safari 텍스트 선택 및 드래그 방지 */
+    -webkit-tap-highlight-color: transparent;
+    /* 모바일 터치 하이라이트 제거 */
+    -webkit-user-select: none;
+    /* iOS Safari 텍스트 선택 및 드래그 방지 */
     -moz-user-select: none;
     -ms-user-select: none;
-    user-select: none; /* 텍스트 드래그 선택 방지 */
-    -webkit-touch-callout: none; /* iOS 롱프레스 말풍선/콜아웃 방지 */
+    user-select: none;
+    /* 텍스트 드래그 선택 방지 */
+    -webkit-touch-callout: none;
+    /* iOS 롱프레스 말풍선/콜아웃 방지 */
 }
 
 /* 편집자가 직접 타이핑/입력하는 필드는 정상 텍스트 선택 및 드래그 허용 */
-input, textarea, [contenteditable="true"] {
+input,
+textarea,
+[contenteditable="true"] {
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
     -ms-user-select: text !important;
@@ -65,7 +78,8 @@ body {
 /* 3. 모바일 앱 형태의 컨테이너 설계 (Desktop 대응) */
 .app-container {
     width: 100%;
-    max-width: 480px; /* 스마트폰 가로 크기 제한 */
+    max-width: 480px;
+    /* 스마트폰 가로 크기 제한 */
     height: 100vh;
     background-color: var(--stitch-bg-light);
     display: flex;
@@ -76,7 +90,8 @@ body {
 
 @media (min-width: 480px) {
     .app-container {
-        height: 850px; /* 데스크톱 웹 환경에서 고정 세로 크기 */
+        height: 850px;
+        /* 데스크톱 웹 환경에서 고정 세로 크기 */
         border-radius: 24px;
         overflow: hidden;
     }
@@ -165,8 +180,13 @@ body {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* 7. 역할 배너 (남자친구 / 여자친구 모드) */
@@ -300,8 +320,15 @@ body {
 }
 
 @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
 }
 
 .celebration-icon {
@@ -341,7 +368,8 @@ body {
     aspect-ratio: 1;
     border-radius: 12px;
     background-color: transparent;
-    border: 2px dashed #CBD5E0; /* hand-drawn dotted box style */
+    border: 2px dashed #CBD5E0;
+    /* hand-drawn dotted box style */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -359,7 +387,8 @@ body {
 
 .grid-slot.active {
     background-color: transparent;
-    border: 2px dashed transparent; /* hide dotted box when active */
+    border: 2px dashed transparent;
+    /* hide dotted box when active */
 }
 
 .slot-number {
@@ -401,8 +430,15 @@ body {
 }
 
 @keyframes popIn {
-    0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+        transform: scale(0.5) rotate(-10deg);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
 }
 
 /* 12. 다이얼로그 모달 디자인 */
@@ -438,8 +474,15 @@ body {
 }
 
 @keyframes modalPop {
-    0% { transform: scale(0.85); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .modal-content.scrollable {
@@ -774,7 +817,8 @@ input:disabled {
     left: 0;
     width: 280px;
     height: 100vh;
-    height: 100dvh; /* 모바일 주소창 높이를 제외하여 footer가 항상 화면 안에 노출 */
+    height: 100dvh;
+    /* 모바일 주소창 높이를 제외하여 footer가 항상 화면 안에 노출 */
     background-color: var(--stitch-bg-light);
     box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
     z-index: 95;
@@ -804,7 +848,8 @@ input:disabled {
 
 .sidebar-body {
     flex: 1;
-    min-height: 0; /* flexbox 내부 스크롤이 body 안에서만 발생하도록 제한 */
+    min-height: 0;
+    /* flexbox 내부 스크롤이 body 안에서만 발생하도록 제한 */
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -956,7 +1001,8 @@ input:disabled {
 
 /* 사이드바 푸터 영역 (역할 좌측, 공유/설정 우측 하단 배치) */
 .sidebar-footer {
-    flex-shrink: 0; /* 항상 하단에 고정, 축소 방지 */
+    flex-shrink: 0;
+    /* 항상 하단에 고정, 축소 방지 */
     padding: 14px 16px;
     border-top: 1.5px solid var(--border-color);
     background-color: var(--stitch-card-bg);
@@ -1090,23 +1136,62 @@ input:disabled {
 }
 
 .sticker-option-icon {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+}
+
+.sticker-option-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.15));
+    user-select: none;
+    pointer-events: none;
+    transition: transform 0.2s ease;
+}
+
+.sticker-option-item:hover .sticker-option-icon img {
+    transform: scale(1.1);
 }
 
 .sticker-option-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-top: 2px;
+    margin-top: 3px;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: 100%;
+}
+
+/* 스티커 판 슬롯 내 스티커 이미지 */
+.sticker-img-container {
+    width: 88%;
+    height: 88%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    pointer-events: none;
+}
+
+.sticker-img-container.active {
+    animation: jellyPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.praise-sticker-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2));
+    user-select: none;
+    pointer-events: none;
 }
 
 .sea-sticker-svg {
@@ -1121,9 +1206,19 @@ input:disabled {
 }
 
 @keyframes jellyPop {
-    0% { transform: scale(0.6) rotate(-10deg); opacity: 0; }
-    50% { transform: scale(1.15) rotate(5deg); }
-    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    0% {
+        transform: scale(0.6) rotate(-10deg);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.15) rotate(5deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
 }
 
 /* ==========================================
@@ -1237,9 +1332,17 @@ input:disabled {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.slider-red::-webkit-slider-thumb { background: #EF4444; }
-.slider-green::-webkit-slider-thumb { background: #10B981; }
-.slider-blue::-webkit-slider-thumb { background: #3B82F6; }
+.slider-red::-webkit-slider-thumb {
+    background: #EF4444;
+}
+
+.slider-green::-webkit-slider-thumb {
+    background: #10B981;
+}
+
+.slider-blue::-webkit-slider-thumb {
+    background: #3B82F6;
+}
 
 .color-picker-input-row {
     display: flex;
@@ -1258,4 +1361,3 @@ input:disabled {
     cursor: pointer;
     background: none;
 }
-
