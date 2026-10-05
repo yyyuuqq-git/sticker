@@ -161,6 +161,7 @@ const inputEditStickerMemo = document.getElementById("input-edit-sticker-memo");
 const btnMemoEditStart = document.getElementById("btn-memo-edit-start");
 const btnMemoEditCancel = document.getElementById("btn-memo-edit-cancel");
 const btnMemoEditSave = document.getElementById("btn-memo-edit-save");
+const btnMemoRemove = document.getElementById("btn-memo-remove");
 
 // 공용 버튼 트리거
 const btnShare = document.getElementById("btn-share");
@@ -771,7 +772,8 @@ async function renderBoardList(force = false) {
         });
     }
 
-    const fingerprint = combinedList.map(b => `${b.id}:${b.title}:${b.reward_text}:${b.id === currentBoardId}`).join('|');
+    const canEditNow = localStorage.getItem("is_editor") === "true";
+    const fingerprint = canEditNow + '#' + combinedList.map(b => `${b.id}:${b.title}:${b.reward_text}:${b.id === currentBoardId}`).join('|');
 
     if (!force && fingerprint === lastBoardListFingerprint) {
         return;
@@ -796,6 +798,16 @@ async function renderBoardList(force = false) {
     }
 }
 
+// HTML 삽입 전 특수문자 이스케이프 (공유 코드로 불러온 보드 제목/보상 보호)
+function escapeHtml(value) {
+    return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 // 보드 아이템 DOM 요소 생성 헬퍼
 function createBoardItemDOM(board, isLocal) {
     const isActive = board.id === currentBoardId;
@@ -806,21 +818,27 @@ function createBoardItemDOM(board, isLocal) {
     const hasPermission = localStorage.getItem("is_editor") === "true";
 
     const editButtonHtml = `
-        <button class="btn-edit-board" title="스티커판 정보 수정">
+        <button class="btn-edit-board" title="스티커판 정보 수정" aria-label="스티커판 정보 수정">
             <span class="material-icons" style="font-size: 16px;">edit</span>
         </button>
     `;
 
     const deleteButtonHtml = (isLocal && hasPermission) ? `
-        <button class="btn-delete-board" title="삭제">
+        <button class="btn-delete-board" title="삭제" aria-label="스티커판 삭제">
             <span class="material-icons" style="font-size: 16px;">delete</span>
         </button>
     ` : '';
 
+    // 마우스 환경(PC)에서 바로 끌어서 순서를 바꿀 수 있는 핸들 (편집 권한일 때만)
+    const dragHandleHtml = hasPermission
+        ? `<span class="material-icons drag-handle" title="끌어서 순서 변경" aria-hidden="true">drag_indicator</span>`
+        : '';
+
     item.innerHTML = `
+        ${dragHandleHtml}
         <div class="board-item-info">
-            <span class="board-item-title">${board.title}</span>
-            <span class="board-item-code">보상: ${board.reward_text || '없음'}</span>
+            <span class="board-item-title">${escapeHtml(board.title)}</span>
+            <span class="board-item-code">보상: ${escapeHtml(board.reward_text || '없음')}</span>
         </div>
         <div class="board-item-actions">
             ${editButtonHtml}
@@ -864,6 +882,10 @@ function createBoardItemDOM(board, isLocal) {
         isReorderDrag = false;
         startY = e.type.startsWith('touch') ? (e.touches[0] ? e.touches[0].clientY : 0) : e.clientY;
 
+        // PC: 드래그 핸들을 잡으면 롱프레스 대기 없이 즉시 순서 변경 시작
+        const fromHandle = e.type === 'mousedown' && !!e.target.closest(".drag-handle");
+        if (fromHandle) e.preventDefault();
+
         pressTimer = setTimeout(() => {
             const canEdit = localStorage.getItem("is_editor") === "true";
             if (!canEdit) {
@@ -887,7 +909,7 @@ function createBoardItemDOM(board, isLocal) {
             window.addEventListener("mouseup", onEndHandler);
             window.addEventListener("touchend", onEndHandler);
             window.addEventListener("touchcancel", onEndHandler);
-        }, 350);
+        }, fromHandle ? 0 : 350);
     };
 
     const cancelTimerHandler = (e) => {
@@ -1177,6 +1199,7 @@ async function refreshApp() {
             if (prevActive !== isActive || prevMemo !== rawMemo || !slot.hasChildNodes()) {
                 slot.className = `grid-slot ${isActive ? "active" : ""}`;
                 slot.setAttribute("data-memo", rawMemo);
+                slot.setAttribute("aria-label", `${i + 1}번째 칸, ${isActive ? "스티커 붙음" : "비어 있음"}`);
                 slot.innerHTML = `
                     ${getSeaCreatureStickerSvg(i, isActive, rawMemo)}
                     <span class="slot-number">${i + 1}</span>
@@ -1210,6 +1233,8 @@ async function refreshApp() {
 function createSlotElement(i) {
     const slot = document.createElement("div");
     slot.className = "grid-slot";
+    slot.setAttribute("role", "button");
+    slot.setAttribute("tabindex", "0");
 
     let pressTimer = null;
     let preventClick = false;
@@ -1255,6 +1280,30 @@ function createSlotElement(i) {
         }
         const stickerData = currentStickers.find(s => s.sticker_index === i);
         handleSlotClick(i, !!stickerData);
+    });
+
+    // PC: 마우스 우클릭으로 스티커 떼기 (터치 기기의 롱프레스 메뉴와 중복되지 않도록 마우스 환경에서만)
+    slot.addEventListener("contextmenu", (e) => {
+        if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+        const stickerData = currentStickers.find(s => s.sticker_index === i);
+        if (!stickerData) return;
+        e.preventDefault();
+        cancelPress();
+        preventClick = false;
+        handleSlotLongPress(i, true);
+    });
+
+    // 키보드: Enter/Space = 클릭, Delete/Backspace = 스티커 떼기
+    slot.addEventListener("keydown", (e) => {
+        if (e.target !== slot) return;
+        const stickerData = currentStickers.find(s => s.sticker_index === i);
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleSlotClick(i, !!stickerData);
+        } else if ((e.key === "Delete" || e.key === "Backspace") && stickerData) {
+            e.preventDefault();
+            handleSlotLongPress(i, true);
+        }
     });
 
     return slot;
@@ -1313,8 +1362,10 @@ async function handleSlotClick(index, isActive) {
 
         if (isEditorMode) {
             btnMemoEditStart.classList.remove("hidden");
+            if (btnMemoRemove) btnMemoRemove.classList.remove("hidden");
         } else {
             btnMemoEditStart.classList.add("hidden");
+            if (btnMemoRemove) btnMemoRemove.classList.add("hidden");
         }
 
         modalMemoView.classList.remove("hidden");
@@ -1589,6 +1640,19 @@ function applyThemeColor(hex, save = false) {
     document.documentElement.style.setProperty("--stitch-bg-gradient-start", bgStart);
     document.documentElement.style.setProperty("--stitch-bg-gradient-end", bgEnd);
     document.documentElement.style.setProperty("--stitch-glow", glowStr);
+
+    // 테마색 위의 글자색: WCAG 대비가 더 높은 쪽(흰색/짙은색)을 자동 선택
+    const toLinear = (c) => {
+        const v = c / 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const lum = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    const darkLum = 0.0144; // #1A202C
+    const contrastWhite = 1.05 / (lum + 0.05);
+    const contrastDark = (lum + 0.05) / (darkLum + 0.05);
+    const useDarkText = contrastDark > contrastWhite;
+    document.documentElement.style.setProperty("--on-primary", useDarkText ? "#1A202C" : "#FFFFFF");
+    document.documentElement.style.setProperty("--on-primary-hover", useDarkText ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.2)");
 
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) metaTheme.setAttribute("content", hex);
@@ -1888,6 +1952,7 @@ btnMemoEditStart.addEventListener("click", () => {
     memoEditArea.classList.remove("hidden");
 
     btnMemoEditStart.classList.add("hidden");
+    if (btnMemoRemove) btnMemoRemove.classList.add("hidden");
     btnMemoViewClose.classList.add("hidden");
     btnMemoEditCancel.classList.remove("hidden");
     btnMemoEditSave.classList.remove("hidden");
@@ -1895,12 +1960,25 @@ btnMemoEditStart.addEventListener("click", () => {
     inputEditStickerMemo.focus();
 });
 
+// 메모 보기 모달에서 바로 스티커 떼기 (PC·키보드용 대체 수단)
+if (btnMemoRemove) {
+    btnMemoRemove.addEventListener("click", () => {
+        if (!isEditorMode || editTargetIndex === null) return;
+        deleteTargetIndex = editTargetIndex;
+        deleteTargetBoardId = null;
+        deleteConfirmText.textContent = "스티커를 떼겠습니까?";
+        modalMemoView.classList.add("hidden");
+        modalDelete.classList.remove("hidden");
+    });
+}
+
 // 메모 수정 취소
 btnMemoEditCancel.addEventListener("click", () => {
     document.querySelector("#modal-memo-view .memo-view-content").classList.remove("hidden");
     memoEditArea.classList.add("hidden");
 
     btnMemoEditStart.classList.remove("hidden");
+    if (btnMemoRemove) btnMemoRemove.classList.remove("hidden");
     btnMemoViewClose.classList.remove("hidden");
     btnMemoEditCancel.classList.add("hidden");
     btnMemoEditSave.classList.add("hidden");
@@ -1956,6 +2034,71 @@ document.querySelectorAll(".modal-overlay").forEach(overlay => {
             }
         }
     });
+});
+
+// ==========================================
+// 8.5 키보드 · 접근성 (PC / 태블릿 외장 키보드 지원)
+// ==========================================
+
+// 모달/아이콘 버튼에 접근성 속성 부여
+document.querySelectorAll(".modal-content").forEach(el => {
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    const title = el.querySelector(".modal-title");
+    if (title) el.setAttribute("aria-label", title.textContent.trim());
+});
+document.querySelectorAll("button[title]").forEach(btn => {
+    if (!btn.hasAttribute("aria-label")) btn.setAttribute("aria-label", btn.getAttribute("title"));
+});
+
+// Enter(입력창) / Ctrl+Enter(메모 입력창)로 확인 버튼 누르기
+const ENTER_SUBMIT_MAP = {
+    "input-pin": btnPinSubmit,
+    "input-switch-board": btnSwitchBoard,
+    "input-create-board-title": btnCreateBoard,
+    "setup-board-id": btnSetupSubmit,
+    "setup-title": btnSetupSubmit,
+    "setup-target-count": btnSetupSubmit,
+    "setup-reward": btnSetupSubmit,
+    "setup-pin": btnSetupSubmit,
+    "edit-board-title": btnBoardEditSave,
+    "edit-board-target-count": btnBoardEditSave,
+    "edit-board-reward": btnBoardEditSave
+};
+const CTRL_ENTER_SUBMIT_MAP = {
+    "input-sticker-memo": btnMemoSubmit,
+    "input-edit-sticker-memo": btnMemoEditSave
+};
+
+document.addEventListener("keydown", (e) => {
+    // 한글 등 IME 조합 중에는 무시
+    if (e.isComposing || e.keyCode === 229) return;
+
+    if (e.key === "Escape") {
+        // 가장 위에 떠 있는 모달부터 닫기
+        const openModals = Array.from(document.querySelectorAll(".modal-overlay:not(.hidden)"));
+        if (openModals.length > 0) {
+            e.preventDefault();
+            openModals[openModals.length - 1].click(); // 배경 클릭과 동일한 정리 로직 재사용
+            return;
+        }
+        if (sidebar && sidebar.classList.contains("open")) {
+            sidebar.classList.remove("open");
+            sidebarOverlay.classList.add("hidden");
+        }
+        return;
+    }
+
+    if (e.key === "Enter") {
+        const id = e.target && e.target.id;
+        if (id && ENTER_SUBMIT_MAP[id]) {
+            e.preventDefault();
+            ENTER_SUBMIT_MAP[id].click();
+        } else if (id && CTRL_ENTER_SUBMIT_MAP[id] && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            CTRL_ENTER_SUBMIT_MAP[id].click();
+        }
+    }
 });
 
 // ==========================================
@@ -2040,7 +2183,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // 공유/생성 모달을 열고 새 보드 생성 인풋에 포커싱
             modalShare.classList.remove("hidden");
-            inputCreateBoard.value = "";
             inputCreateBoardTitle.value = "";
             inputCreateBoardTitle.focus();
         });

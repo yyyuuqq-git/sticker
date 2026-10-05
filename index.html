@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>스티커판</title>
 
     <!-- 모바일 PWA 및 웹앱 전체화면 설정 -->
@@ -23,7 +23,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- 커스텀 CSS (모바일 캐시 방지) -->
-    <link rel="stylesheet" href="style.css?v=3.4.0-sticker-full-ratio">
+    <link rel="stylesheet" href="style.css?v=4.0.0-responsive">
 </head>
 
 <body>
@@ -295,6 +295,7 @@
                 <textarea id="input-edit-sticker-memo" rows="3" class="memo-textarea" maxlength="200"></textarea>
             </div>
             <div class="modal-actions">
+                <button id="btn-memo-remove" class="btn btn-danger-outline hidden">떼기 🗑️</button>
                 <button id="btn-memo-edit-start" class="btn btn-primary hidden">수정 ✍️</button>
                 <button id="btn-memo-edit-cancel" class="btn btn-secondary hidden">취소</button>
                 <button id="btn-memo-edit-save" class="btn btn-primary hidden">저장 🚀</button>
@@ -411,7 +412,7 @@
     <div id="toast" class="toast hidden"></div>
 
     <!-- 커스텀 JS (모바일 기기 브라우저 캐시 방지) -->
-    <script src="app.js?v=3.3.1-privacy-isolation"></script>
+    <script src="app.js?v=4.0.0-responsive"></script>
 </body>
 
 </html>
