@@ -1,0 +1,1721 @@
+/* ==========================================
+   스티치 테마 칭찬나라 전역 CSS 디자인 시스템
+   ========================================== */
+
+/* 1. 디자인 토큰 및 변수 */
+:root {
+    --stitch-primary: #4A5568;
+    /* slate blue-gray */
+    --stitch-primary-dark: #2D3748;
+    /* charcoal */
+    --stitch-primary-light: #F1F5F9;
+    --stitch-bg-gradient-start: #E2DCD5;
+    --stitch-bg-gradient-end: #CBD5E1;
+    --stitch-glow: rgba(74, 85, 104, 0.25);
+
+    --stitch-light-sky: #E2E8F0;
+    --stitch-pink: #F87171;
+    /* soft pink */
+    --stitch-dark: #1A202C;
+    --stitch-bg-light: #FAF6F0;
+    /* cozy cream */
+    --stitch-card-bg: #FFFFFF;
+
+    --accent-yellow: #F59E0B;
+    /* warm gold */
+    --soft-pink: #FEF2F2;
+    --soft-blue: #EDF2F7;
+
+    --text-primary: #2D3748;
+    --text-muted: #718096;
+    --border-color: #CBD5E0;
+
+    /* 테마색 위의 글자색 (app.js가 명도에 따라 자동 전환) */
+    --on-primary: #FFFFFF;
+    --on-primary-hover: rgba(255, 255, 255, 0.2);
+
+    --font-app: 'Nunito', 'Jua', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 2. 전역 스타일 초기화 & iOS 텍스트 선택 방지 */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    /* 모바일 터치 하이라이트 제거 */
+    -webkit-user-select: none;
+    /* iOS Safari 텍스트 선택 및 드래그 방지 */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* 텍스트 드래그 선택 방지 */
+    -webkit-touch-callout: none;
+    /* iOS 롱프레스 말풍선/콜아웃 방지 */
+}
+
+/* 편집자가 직접 타이핑/입력하는 필드는 정상 텍스트 선택 및 드래그 허용 */
+input,
+textarea,
+[contenteditable="true"] {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+    -webkit-touch-callout: default !important;
+}
+
+body {
+    font-family: var(--font-app);
+    background: linear-gradient(135deg, var(--stitch-bg-gradient-start, #E2DCD5) 0%, var(--stitch-bg-gradient-end, #CBD5E1) 100%);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.35s ease;
+}
+
+/* 3. 모바일 앱 형태의 컨테이너 설계 (Desktop 대응) */
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    /* 스마트폰 가로 크기 제한 */
+    height: 100vh;
+    background-color: var(--stitch-bg-light);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    position: relative;
+}
+
+@media (min-width: 480px) {
+    .app-container {
+        height: 850px;
+        /* 데스크톱 웹 환경에서 고정 세로 크기 */
+        border-radius: 24px;
+        overflow: hidden;
+    }
+}
+
+/* 4. 헤더 레이아웃 */
+.app-header {
+    background-color: var(--stitch-primary);
+    color: var(--on-primary);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    font-family: 'Jua', sans-serif;
+    font-size: 20px;
+    font-weight: normal;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-button {
+    background: transparent;
+    border: none;
+    color: var(--on-primary);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+@media (hover: hover) {
+    .icon-button:hover {
+        background-color: var(--on-primary-hover);
+    }
+}
+
+.icon-button:active {
+    transform: scale(0.95);
+}
+
+/* 5. 메인 스크롤 콘텐츠 영역 */
+.app-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* 6. 로딩 스피너 */
+.spinner-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--stitch-bg-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid var(--soft-blue);
+    border-top: 5px solid var(--stitch-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* 7. 역할 배너 (남자친구 / 여자친구 모드) */
+.role-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 14px;
+    transition: background-color 0.3s;
+}
+
+.role-banner.reader-mode {
+    background-color: var(--soft-blue);
+}
+
+.role-banner.editor-mode {
+    background-color: var(--soft-pink);
+}
+
+.role-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.role-status .material-icons {
+    font-size: 20px;
+}
+
+.reader-mode .role-status .material-icons {
+    color: var(--stitch-primary);
+}
+
+.editor-mode .role-status .material-icons {
+    color: var(--stitch-pink);
+}
+
+.status-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.toggle-button {
+    background-color: var(--stitch-pink);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.editor-mode .toggle-button {
+    background-color: var(--stitch-primary);
+}
+
+.toggle-button:active {
+    transform: scale(0.95);
+}
+
+/* 8. 칭찬판 카드 요약 정보 */
+.summary-card {
+    background-color: var(--stitch-card-bg);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.board-title {
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--stitch-primary-dark);
+    margin-bottom: 4px;
+}
+
+.board-code-display {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.progress-info {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.progress-count {
+    color: var(--stitch-primary);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 10px;
+    background-color: var(--soft-blue);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--stitch-primary);
+    width: 0%;
+    border-radius: 5px;
+    transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+
+/* 9. 축하 배너 */
+.celebration-banner {
+    background-color: var(--accent-yellow);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 15px rgba(255, 213, 79, 0.3);
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+.celebration-icon {
+    font-size: 32px;
+    color: var(--stitch-dark);
+}
+
+.celebration-info h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--stitch-dark);
+}
+
+.celebration-info p {
+    font-size: 12px;
+    color: rgba(13, 25, 43, 0.8);
+}
+
+/* 10. 스티커 격자 보드 */
+.board-grid-card {
+    background-color: var(--stitch-card-bg);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    flex: 1;
+}
+
+.sticker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    max-height: 100%;
+}
+
+.grid-slot {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background-color: transparent;
+    border: 2px dashed #CBD5E0;
+    /* hand-drawn dotted box style */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.grid-slot:active {
+    transform: scale(0.92);
+}
+
+.grid-slot.active {
+    background-color: transparent;
+    border: 2px dashed transparent;
+    /* hide dotted box when active */
+}
+
+.slot-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--stitch-primary-dark);
+    opacity: 0.6;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+}
+
+.grid-slot.active .slot-number {
+    top: auto;
+    left: auto;
+    bottom: 3px;
+    right: 5px;
+    transform: none;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--text-muted);
+    opacity: 0.85;
+    z-index: 2;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.85);
+}
+
+/* 스티커 등장 팝 애니메이션 및 스티커 종이 질감 효과 */
+.sticker-svg {
+    width: 85%;
+    height: 85%;
+    /* drop-shadow filters on the SVG to make it look like a physical paper sticker */
+    filter: drop-shadow(2px 3px 2px rgba(0, 0, 0, 0.15));
+}
+
+.grid-slot.active .sticker-svg {
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.5) rotate(-10deg);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* 12. 다이얼로그 모달 디자인 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(13, 25, 43, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    opacity: 1;
+    transition: opacity 0.3s;
+    cursor: pointer;
+}
+
+.modal-content {
+    background-color: var(--stitch-card-bg);
+    width: 88%;
+    max-width: 380px;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    cursor: default;
+}
+
+@keyframes modalPop {
+    0% {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-content.scrollable {
+    max-height: 85vh;
+    max-height: 85dvh;
+    overflow-y: auto;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.modal-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-color);
+    font-family: var(--font-app);
+    font-size: 14px;
+    color: var(--stitch-dark);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus {
+    border-color: var(--stitch-primary);
+}
+
+input:disabled {
+    background-color: #F5F5F5;
+    color: #9E9E9E;
+    border-color: #E0E0E0;
+    cursor: not-allowed;
+}
+
+.input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.input-row input {
+    flex: 1;
+}
+
+.error-text {
+    font-size: 11px;
+    color: #E53935;
+    font-weight: 700;
+}
+
+.divider {
+    border: none;
+    border-top: 1.5px solid var(--border-color);
+    margin: 4px 0;
+}
+
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--stitch-primary);
+}
+
+.badge-lock {
+    font-size: 9px;
+    background-color: var(--soft-pink);
+    color: var(--stitch-pink);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 800;
+}
+
+.share-code-box {
+    background-color: var(--soft-blue);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1.5px dashed var(--stitch-primary);
+}
+
+.share-code {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.share-code-box .icon-button {
+    color: var(--stitch-primary);
+}
+
+/* 13. 공용 버튼 디자인 */
+.btn {
+    border: none;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-family: var(--font-app);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn-primary {
+    background-color: var(--stitch-primary);
+    color: var(--on-primary);
+}
+
+@media (hover: hover) {
+    .btn-primary:hover {
+        filter: brightness(0.92);
+    }
+}
+
+.btn-secondary {
+    background-color: #F0F0F0;
+    color: var(--text-muted);
+}
+
+@media (hover: hover) {
+    .btn-secondary:hover {
+        background-color: #E2E2E2;
+    }
+}
+
+.btn-danger {
+    background-color: #E53935;
+    color: white;
+}
+
+@media (hover: hover) {
+    .btn-danger:hover {
+        background-color: #C62828;
+    }
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 12px;
+    border-radius: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* 14. 토스트 알림 메일 */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(13, 25, 43, 0.85);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 200;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+/* 15. 초기 설정 화면 (웰컴 스크린) */
+.welcome-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--stitch-bg-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    padding: 20px;
+}
+
+.welcome-card {
+    background-color: var(--stitch-card-bg);
+    width: 100%;
+    max-width: 400px;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.welcome-header {
+    text-align: center;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.welcome-logo-icon {
+    font-size: 40px;
+    color: var(--stitch-primary);
+    margin-bottom: 4px;
+}
+
+.welcome-header h2 {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+.welcome-header p {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.helper-text {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* 칭찬 메모 추가 스타일 */
+.memo-textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-color);
+    font-family: var(--font-app);
+    font-size: 14px;
+    color: var(--stitch-dark);
+    outline: none;
+    resize: none;
+    transition: border-color 0.2s;
+}
+
+.memo-textarea:focus {
+    border-color: var(--stitch-primary);
+}
+
+.memo-view-content {
+    background-color: var(--soft-blue);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1.5px solid rgba(74, 85, 104, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.memo-view-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--stitch-primary-dark);
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.memo-view-date {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.memo-dates-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+    margin-top: 4px;
+    border-top: 1px dashed rgba(74, 85, 104, 0.15);
+    padding-top: 8px;
+}
+
+/* ==========================================
+   16. 사이드바 (서랍 메뉴) 스타일
+   ========================================== */
+.sidebar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(13, 25, 43, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    height: 100dvh;
+    /* 모바일 주소창 높이를 제외하여 footer가 항상 화면 안에 노출 */
+    background-color: var(--stitch-bg-light);
+    box-shadow: none;
+    z-index: 95;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.05s ease;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+    /* 닫힌 상태에서 그림자가 화면 가장자리에 새어 나오지 않도록 열릴 때만 적용 */
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-header {
+    background-color: var(--stitch-primary);
+    color: var(--on-primary);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-title {
+    font-family: 'Jua', sans-serif;
+    font-size: 18px;
+}
+
+.sidebar-body {
+    flex: 1;
+    min-height: 0;
+    /* flexbox 내부 스크롤이 body 안에서만 발생하도록 제한 */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+/* 보드 목록 스타일 */
+.board-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.board-item {
+    background-color: var(--stitch-card-bg);
+    border: 1.5px solid var(--border-color);
+    border-radius: 14px;
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+@media (hover: hover) {
+    .board-item:hover {
+        border-color: var(--stitch-primary);
+        background-color: var(--soft-blue);
+    }
+}
+
+.board-item.active {
+    border-color: var(--stitch-pink);
+    background-color: var(--soft-pink);
+}
+
+.board-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.board-item-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+}
+
+.board-item-code {
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+}
+
+/* 보드 액션 버튼 그룹 (수정 / 삭제) */
+.board-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+}
+
+.btn-edit-board,
+.btn-delete-board {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+@media (hover: hover) {
+    .btn-edit-board:hover {
+        background-color: rgba(74, 85, 104, 0.12);
+        color: var(--stitch-primary-dark);
+    }
+}
+
+.btn-edit-board:active,
+.btn-delete-board:active {
+    transform: scale(0.9);
+}
+
+/* 롱프레스 드래그 앤 드롭 재정렬 스타일 */
+.board-list.is-reordering {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.board-list.is-reordering .board-item:not(.dragging) {
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.board-item.dragging {
+    opacity: 0.9;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    border-color: var(--stitch-pink);
+    background-color: var(--soft-pink);
+    z-index: 1000;
+    pointer-events: none;
+    transition: box-shadow 0.15s ease;
+}
+
+@media (hover: hover) {
+    .btn-delete-board:hover {
+        background-color: rgba(229, 57, 53, 0.1);
+        color: #E53935;
+    }
+}
+
+/* 새 보드 만들기 버튼 */
+.btn-add-board {
+    background-color: var(--stitch-card-bg);
+    border: 1.5px dashed var(--stitch-primary);
+    color: var(--stitch-primary);
+    border-radius: 14px;
+    padding: 12px;
+    font-family: var(--font-app);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+@media (hover: hover) {
+    .btn-add-board:hover {
+        background-color: var(--soft-blue);
+        border-style: solid;
+    }
+}
+
+.btn-add-board:active {
+    transform: scale(0.97);
+}
+
+/* 사이드바 푸터 영역 (역할 좌측, 공유/설정 우측 하단 배치) */
+.sidebar-footer {
+    flex-shrink: 0;
+    /* 항상 하단에 고정, 축소 방지 */
+    padding: 14px 16px;
+    border-top: 1.5px solid var(--border-color);
+    background-color: var(--stitch-card-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-role-area {
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-role-btn {
+    background-color: var(--soft-blue);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.25s ease;
+    outline: none;
+}
+
+.sidebar-role-btn .material-icons {
+    font-size: 16px;
+    color: var(--stitch-primary);
+    transition: color 0.25s ease;
+}
+
+.sidebar-role-btn #role-text {
+    font-family: var(--font-app);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--stitch-primary-dark);
+}
+
+/* 여자친구 모드 활성화 시 테마 전환 */
+.sidebar-role-btn.editor-mode {
+    background-color: var(--soft-pink);
+}
+
+.sidebar-role-btn.editor-mode .material-icons {
+    color: var(--stitch-pink);
+}
+
+.sidebar-role-btn.editor-mode #role-text {
+    color: var(--stitch-pink);
+}
+
+.sidebar-role-btn:active {
+    transform: scale(0.96);
+}
+
+.sidebar-actions-right {
+    display: flex;
+    gap: 12px;
+}
+
+.sidebar-actions-right .icon-button {
+    color: var(--stitch-primary);
+    background-color: var(--soft-blue);
+}
+
+@media (hover: hover) {
+    .sidebar-actions-right .icon-button:hover {
+        background-color: var(--border-color);
+        color: var(--stitch-primary-dark);
+    }
+}
+
+/* 헤더 왼쪽 햄버거 메뉴를 위한 스타일 보정 */
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-section-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--stitch-primary-dark);
+    margin-bottom: 8px;
+    padding-left: 6px;
+    border-left: 3px solid var(--stitch-pink);
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================
+   3D 해양생물 에폭시 스티커 및 선택 팝업 스타일
+   ========================================== */
+.sticker-select-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin: 8px 0;
+    padding: 4px 2px;
+}
+
+@media (max-width: 480px) {
+    .sticker-select-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+    }
+}
+
+.sticker-option-item {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.85));
+    border: 2px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 5px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    user-select: none;
+}
+
+@media (hover: hover) {
+    .sticker-option-item:hover {
+        transform: translateY(-2px) scale(1.05);
+        border-color: #818CF8;
+    }
+}
+
+.sticker-option-item.selected {
+    border: 2.5px solid #6366F1;
+    background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    transform: scale(1.06);
+}
+
+.sticker-option-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
+.sticker-option-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.15));
+    user-select: none;
+    pointer-events: none;
+    transition: transform 0.2s ease;
+}
+
+@media (hover: hover) {
+    .sticker-option-item:hover .sticker-option-icon img {
+        transform: scale(1.1);
+    }
+}
+
+.sticker-option-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 3px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+/* 스티커 판 슬롯 내 스티커 이미지 */
+.sticker-img-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    pointer-events: none;
+    position: relative;
+    z-index: 1;
+}
+
+.sticker-img-container.active {
+    animation: jellyPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.praise-sticker-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.16));
+    user-select: none;
+    pointer-events: none;
+}
+
+.sea-sticker-svg {
+    width: 100%;
+    height: 100%;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sea-sticker-svg.active {
+    filter: drop-shadow(0 4px 10px rgba(99, 102, 241, 0.3));
+    animation: jellyPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes jellyPop {
+    0% {
+        transform: scale(0.6) rotate(-10deg);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.15) rotate(5deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* ==========================================
+   RGB 색상 팔레트 모달 및 프리셋 스타일
+   ========================================== */
+.color-preview-box {
+    width: 100%;
+    height: 54px;
+    border-radius: 14px;
+    margin: 14px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: background-color 0.2s ease;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.color-preview-text {
+    font-family: 'Nunito', monospace;
+    font-weight: 800;
+    font-size: 16px;
+    color: #FFFFFF;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    letter-spacing: 1px;
+}
+
+.color-preset-section {
+    margin-bottom: 16px;
+}
+
+.section-subtitle {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.color-preset-btn {
+    height: 36px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+@media (hover: hover) {
+    .color-preset-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+}
+
+.color-preset-btn.active {
+    border-color: #FFFFFF;
+    outline: 2px solid var(--stitch-primary, #4A5568);
+}
+
+.rgb-controls-section {
+    background-color: var(--stitch-bg-light, #FAF6F0);
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color, #CBD5E0);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rgb-slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rgb-slider-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.rgb-val {
+    font-family: monospace;
+    font-weight: 700;
+}
+
+.rgb-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #E2E8F0;
+    outline: none;
+}
+
+.rgb-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.slider-red::-webkit-slider-thumb {
+    background: #EF4444;
+}
+
+.slider-green::-webkit-slider-thumb {
+    background: #10B981;
+}
+
+.slider-blue::-webkit-slider-thumb {
+    background: #3B82F6;
+}
+
+.color-picker-input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color, #CBD5E0);
+}
+
+.color-input-field {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: none;
+}
+
+/* ==========================================
+   17. 접근성 · 입력 방식 공통 규칙
+   ========================================== */
+
+/* 보드 순서 변경 핸들 (마우스 환경에서만 노출) */
+.drag-handle {
+    display: none;
+    font-size: 18px;
+    color: var(--text-muted);
+    cursor: grab;
+    padding: 4px 2px;
+    margin-right: 6px;
+    touch-action: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .drag-handle {
+        display: inline-flex;
+    }
+}
+
+/* 슬롯 삭제 버튼 (메모 보기 모달) */
+.btn-danger-outline {
+    background-color: transparent;
+    color: #E53935;
+    border: 1.5px solid #E53935;
+}
+
+/* 키보드 포커스 링 */
+:focus-visible {
+    outline: 2px solid var(--stitch-primary);
+    outline-offset: 2px;
+}
+
+.app-header :focus-visible,
+.sidebar-header :focus-visible {
+    outline-color: var(--on-primary);
+}
+
+.grid-slot:focus-visible {
+    outline-offset: 1px;
+}
+
+/* 터치 기기: 더블탭 확대 방지 + iOS 입력 자동 확대 방지(16px) */
+button,
+.grid-slot,
+.board-item {
+    touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    .memo-textarea {
+        font-size: 16px;
+    }
+
+    .icon-button {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* 모션 줄이기 설정 존중 */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==========================================
+   18. 태블릿 (600px ~) : 폰 프레임 해제, 콘텐츠 최대폭 지정
+   ========================================== */
+@media (min-width: 600px) {
+    .app-container {
+        max-width: none;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .app-header,
+    .sidebar-header {
+        min-height: 64px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .icon-button {
+        width: 44px;
+        height: 44px;
+    }
+
+    .logo {
+        font-size: 22px;
+    }
+
+    .sidebar-title {
+        font-size: 20px;
+    }
+
+    .sidebar {
+        width: 320px;
+    }
+
+    .board-item-title,
+    .board-item-code {
+        max-width: 200px;
+    }
+
+    .app-content {
+        padding: 24px;
+        gap: 20px;
+    }
+
+    /* 콘텐츠를 중앙 정렬하고 최대폭 제한 */
+    .app-content>* {
+        width: 100%;
+        max-width: 720px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .summary-card {
+        padding: 24px;
+    }
+
+    .board-title {
+        font-size: 22px;
+    }
+
+    .board-code-display {
+        font-size: 12px;
+    }
+
+    .progress-info {
+        font-size: 14px;
+    }
+
+    .board-grid-card {
+        padding: 20px;
+        flex: 0 0 auto; /* 큰 화면에서 카드가 불필요하게 세로로 늘어나지 않도록 */
+    }
+
+    /* 스티커 격자: 열 수 자동 계산 (화면 회전 시 즉시 재배치) */
+    .sticker-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 12px;
+    }
+
+    .slot-number {
+        font-size: 20px;
+    }
+
+    .grid-slot.active .slot-number {
+        font-size: 10px;
+    }
+
+    /* 모달 */
+    .modal-content {
+        max-width: 440px;
+        padding: 28px;
+    }
+
+    #modal-color-palette .modal-content,
+    #modal-memo-input .modal-content {
+        max-width: 480px !important;
+    }
+
+    .modal-title {
+        font-size: 20px;
+    }
+
+    .modal-desc {
+        font-size: 14px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+    }
+
+    .helper-text {
+        font-size: 11px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    .memo-textarea {
+        font-size: 15px;
+    }
+
+    .sticker-select-grid {
+        gap: 8px;
+    }
+
+    .sticker-option-icon {
+        width: 56px;
+        height: 56px;
+    }
+
+    .sticker-option-label {
+        font-size: 12px;
+    }
+
+    .welcome-card {
+        max-width: 460px;
+    }
+
+    .toast {
+        font-size: 13px;
+    }
+}
+
+/* 터치 기기는 iOS 자동 확대 방지를 위해 16px 유지 */
+@media (min-width: 600px) and (pointer: coarse) {
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    .memo-textarea {
+        font-size: 16px;
+    }
+}
+
+/* ==========================================
+   19. 데스크톱 (1024px ~) : 좌측 사이드바 상시 노출 2-패널
+   ========================================== */
+@media (min-width: 1024px) {
+    .app-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-rows: 64px minmax(0, 1fr);
+        grid-template-areas:
+            "sidebar header"
+            "sidebar main";
+    }
+
+    .app-header {
+        grid-area: header;
+    }
+
+    .app-content {
+        grid-area: main;
+    }
+
+    /* 사이드바를 서랍이 아닌 고정 패널로 */
+    .sidebar,
+    .sidebar.open {
+        grid-area: sidebar;
+        position: relative;
+        width: auto;
+        height: auto;
+        min-height: 0;
+        transform: none;
+        transition: none;
+        z-index: auto;
+        box-shadow: none;
+        border-right: 1.5px solid var(--border-color);
+    }
+
+    .sidebar-overlay,
+    #btn-menu,
+    #btn-sidebar-close {
+        display: none !important;
+    }
+
+    .logo {
+        font-size: 24px;
+    }
+
+    .board-item-title,
+    .board-item-code {
+        max-width: 190px;
+    }
+
+    .app-content {
+        padding: 28px 32px;
+    }
+
+    .app-content>* {
+        max-width: 880px;
+    }
+
+    .board-title {
+        font-size: 24px;
+    }
+
+    .sticker-grid {
+        grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+        gap: 14px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+    }
+}
+
+/* ==========================================
+   20. 와이드 (1440px ~) : 둥근 카드형 앱 프레임
+   ========================================== */
+@media (min-width: 1440px) {
+    .app-container {
+        height: calc(100dvh - 48px);
+        max-height: 960px;
+        border-radius: 24px;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    }
+
+    .app-content>* {
+        max-width: 960px;
+    }
+}

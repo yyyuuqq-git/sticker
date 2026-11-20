@@ -465,16 +465,99 @@ async function apiSaveThemeColor(boardId, hex) {
 }
 
 // ==========================================
-// 5. 감성 칭찬 스티커 5종 컬렉션 (달, 태양, 가오리, 파도, 고래)
+// 5. 감성 칭찬 스티커 5개 테마 컬렉션 및 SVG 렌더러 (theme-stickers.js 모듈 연동)
 // ==========================================
-const PRAISE_STICKERS = [
-    { id: 0, name: "초승달", emoji: "", src: "stickers/moon.png", desc: "초승달" },
-    { id: 1, name: "태양", emoji: "", src: "stickers/sun.png", desc: "태양" },
-    { id: 2, name: "가오리", emoji: "", src: "stickers/ray.png", desc: "가오리" },
-    { id: 3, name: "파도", emoji: "", src: "stickers/wave.png", desc: "파도" },
-    { id: 4, name: "고래", emoji: "", src: "stickers/whale.png", desc: "고래" }
+const PRAISE_STICKERS = (typeof window !== 'undefined' && window.PRAISE_STICKERS) ? window.PRAISE_STICKERS : [
+    { id: 0, name: "초승달", emoji: "🌙", src: "stickers/moon.png", desc: "은은하고 고요한 달빛 초승달" },
+    { id: 1, name: "태양", emoji: "☀️", src: "stickers/sun.png", desc: "세상을 환히 비추는 포근한 태양" },
+    { id: 2, name: "가오리", emoji: "🌊", src: "stickers/ray.png", desc: "밤하늘 은하수를 유영하는 하늘가오리" },
+    { id: 3, name: "파도", emoji: "🌊", src: "stickers/wave.png", desc: "별빛을 머금은 잔잔한 파도" },
+    { id: 4, name: "고래", emoji: "🐋", src: "stickers/whale.png", desc: "꿈과 희망을 품은 밤하늘 고래" }
 ];
-const SEA_CREATURES = PRAISE_STICKERS; // 레거시 참조 및 하위 호환성 보장용 별칭
+const SEA_CREATURES = PRAISE_STICKERS; // 레거시 호환성 유지
+
+const STICKER_THEMES = (typeof window !== 'undefined' && window.STICKER_THEMES) ? window.STICKER_THEMES : {
+    moon: {
+        id: "moon",
+        name: "달빛 친구들 🌙",
+        themeColor: "#4A5568",
+        desc: "고요하고 은은한 달빛과 밤하늘 테마",
+        items: PRAISE_STICKERS
+    }
+};
+
+function normalizeStickerTheme(theme) {
+    if (typeof window !== 'undefined' && typeof window.normalizeStickerTheme === 'function') {
+        return window.normalizeStickerTheme(theme);
+    }
+    if (!theme) return "moon";
+    const clean = String(theme).toLowerCase().trim();
+    return STICKER_THEMES[clean] ? clean : "moon";
+}
+
+function getActiveStickerTheme() {
+    let theme = localStorage.getItem("board_sticker_theme_" + currentBoardId);
+    if (!theme && currentBoard && currentBoard.custom_labels && currentBoard.custom_labels.theme) {
+        theme = currentBoard.custom_labels.theme;
+    }
+    return normalizeStickerTheme(theme);
+}
+
+function getThemeVectorGraphic(theme, type) {
+    if (typeof window !== 'undefined' && typeof window.getThemeVectorGraphic === 'function') {
+        return window.getThemeVectorGraphic(theme, type);
+    }
+    return "";
+}
+
+function getThemeStickerMarkup(theme, type) {
+    if (typeof window !== 'undefined' && typeof window.getThemeStickerMarkup === 'function') {
+        return window.getThemeStickerMarkup(theme, type);
+    }
+    const id = Math.abs(Number(type) || 0) % 5;
+    const item = PRAISE_STICKERS[id] || PRAISE_STICKERS[0];
+    return `<img src="${item.src}" alt="${item.name}" class="praise-sticker-img" draggable="false" />`;
+}
+
+function renderThemePreviewBar(container, theme) {
+    if (typeof window !== 'undefined' && typeof window.renderThemePreviewBar === 'function') {
+        return window.renderThemePreviewBar(container, theme);
+    }
+}
+
+async function saveStickerTheme(theme) {
+    const value = normalizeStickerTheme(theme);
+    localStorage.setItem(`board_sticker_theme_${currentBoardId}`, value);
+    if (currentBoard) {
+        if (!currentBoard.custom_labels) currentBoard.custom_labels = {};
+        currentBoard.custom_labels.theme = value;
+    }
+
+    const now = new Date().toISOString();
+    const memo = `[sticker-theme:${value}]`;
+    if (isLocalMode || !supabaseClient) {
+        const stickers = await apiGetStickers(currentBoardId);
+        const meta = stickers.find(item => item.sticker_index === 998);
+        if (meta) {
+            Object.assign(meta, { memo, updated_at: now });
+        } else {
+            stickers.push({ board_id: currentBoardId, sticker_index: 998, memo, created_at: now, updated_at: now });
+        }
+        localStorage.setItem(`stickers_${currentBoardId}`, JSON.stringify(stickers));
+        return true;
+    }
+
+    try {
+        const { error } = await supabaseClient.from("praise_stickers").upsert(
+            { board_id: currentBoardId, sticker_index: 998, memo, created_at: now, updated_at: now },
+            { onConflict: "board_id,sticker_index" }
+        );
+        return !error;
+    } catch (e) {
+        console.error("테마 저장 DB 싱크 예외 발생:", e);
+        return false;
+    }
+}
 
 let selectedStickerType = 0;
 
@@ -487,9 +570,11 @@ function parseStickerMemo(rawMemo) {
     return { type: null, memo: rawMemo };
 }
 
-function getStickerData(type) {
-    const safeType = Math.abs(Number(type) || 0) % PRAISE_STICKERS.length;
-    return PRAISE_STICKERS[safeType] || PRAISE_STICKERS[0];
+function getStickerData(type, theme = null) {
+    const safeTheme = normalizeStickerTheme(theme || getActiveStickerTheme());
+    const themeObj = STICKER_THEMES[safeTheme] || STICKER_THEMES.moon;
+    const safeType = Math.abs(Number(type) || 0) % themeObj.items.length;
+    return themeObj.items[safeType] || themeObj.items[0];
 }
 
 function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
@@ -497,12 +582,12 @@ function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
         return "";
     }
     const parsed = parseStickerMemo(rawMemo);
-    const type = (parsed.type !== null && parsed.type >= 0) ? (parsed.type % PRAISE_STICKERS.length) : (index % PRAISE_STICKERS.length);
-    const item = getStickerData(type);
+    const type = (parsed.type !== null && parsed.type >= 0) ? (parsed.type % 5) : (index % 5);
+    const theme = getActiveStickerTheme();
 
     return `
         <div class="sticker-img-container active">
-            <img src="${item.src}" alt="${item.name}" class="praise-sticker-img" draggable="false" />
+            ${getThemeStickerMarkup(theme, type)}
         </div>
     `;
 }
@@ -512,25 +597,39 @@ function renderStickerPickerGrid() {
     if (!gridContainer) return;
     gridContainer.innerHTML = "";
 
-    if (selectedStickerType < 0 || selectedStickerType >= PRAISE_STICKERS.length) {
+    if (selectedStickerType < 0 || selectedStickerType >= 5) {
         selectedStickerType = 0;
     }
 
-    PRAISE_STICKERS.forEach(sticker => {
-        const isSel = sticker.id === selectedStickerType;
+    const theme = getActiveStickerTheme();
+    const themeObj = STICKER_THEMES[theme] || STICKER_THEMES.moon;
+
+    // 모달 타이틀 업데이트
+    const modalTitleEl = document.getElementById("modal-memo-input-title");
+    const modalDescEl = document.getElementById("modal-memo-input-desc");
+    if (modalTitleEl) {
+        modalTitleEl.textContent = `${themeObj.name} 스티커 선택`;
+    }
+    if (modalDescEl) {
+        modalDescEl.textContent = `${themeObj.desc || '붙이고 싶은 예쁜 스티커를 선택해 주세요!'}`;
+    }
+
+    themeObj.items.forEach((sticker, id) => {
+        const name = typeof sticker === "string" ? sticker : sticker.name;
+        const isSel = id === selectedStickerType;
         const item = document.createElement("div");
         item.className = "sticker-option-item" + (isSel ? " selected" : "");
-        item.dataset.stickerId = sticker.id;
+        item.dataset.stickerId = id;
         item.innerHTML = `
             <div class="sticker-option-icon">
-                <img src="${sticker.src}" alt="${sticker.name}" draggable="false" />
+                ${getThemeStickerMarkup(theme, id)}
             </div>
-            <span class="sticker-option-label">${sticker.name}</span>
+            <span class="sticker-option-label">${name}</span>
         `;
 
         const selectHandler = (e) => {
             if (e) e.stopPropagation();
-            selectedStickerType = sticker.id;
+            selectedStickerType = id;
             gridContainer.querySelectorAll(".sticker-option-item").forEach(el => el.classList.remove("selected"));
             item.classList.add("selected");
         };
@@ -541,6 +640,8 @@ function renderStickerPickerGrid() {
         gridContainer.appendChild(item);
     });
 }
+
+
 // ==========================================
 // 5.5 등록된 보드 목록 관리 및 사이드바 렌더링
 // ==========================================
@@ -1493,6 +1594,12 @@ if (btnShare) {
     btnShare.addEventListener("click", () => {
         modalShare.classList.remove("hidden");
         inputCreateBoardTitle.value = "";
+        const activeTheme = getActiveStickerTheme();
+        const createThemeSelect = document.getElementById("create-board-theme");
+        if (createThemeSelect) {
+            createThemeSelect.value = activeTheme;
+        }
+        renderThemePreviewBar("create-theme-preview-bar", activeTheme);
         inputCreateBoardTitle.focus();
     });
 }
@@ -1524,6 +1631,7 @@ btnCreateBoard.addEventListener("click", async () => {
         created_at: new Date().toISOString()
     };
 
+    const chosenTheme = (document.getElementById("create-board-theme") && document.getElementById("create-board-theme").value) || "moon";
     const result = await apiCreateBoard(newBoard);
     if (result.success) {
         currentBoardId = finalCode;
@@ -1531,6 +1639,7 @@ btnCreateBoard.addEventListener("click", async () => {
         localStorage.setItem(`board_pin_${finalCode}`, activePin);
         localStorage.setItem(`board_theme_color_${finalCode}`, activeColor);
         await apiSaveThemeColor(finalCode, activeColor);
+        await saveStickerTheme(chosenTheme);
         localStorage.setItem("is_editor", "true");
         inputCreateBoardTitle.value = "";
         isEditorMode = true;
@@ -1548,7 +1657,25 @@ btnCreateBoard.addEventListener("click", async () => {
 // 설정 다이얼로그 노출/숨김
 btnSettings.addEventListener("click", () => {
     modalSettings.classList.remove("hidden");
+    const activeTheme = getActiveStickerTheme();
+    if (editStickerTheme) {
+        editStickerTheme.value = activeTheme;
+    }
+    renderThemePreviewBar("theme-sticker-preview-bar", activeTheme);
 });
+
+if (editStickerTheme) {
+    editStickerTheme.addEventListener("change", (e) => {
+        renderThemePreviewBar("theme-sticker-preview-bar", e.target.value);
+    });
+}
+
+const createBoardThemeSelect = document.getElementById("create-board-theme");
+if (createBoardThemeSelect) {
+    createBoardThemeSelect.addEventListener("change", (e) => {
+        renderThemePreviewBar("create-theme-preview-bar", e.target.value);
+    });
+}
 
 btnSettingsClose.addEventListener("click", () => {
     modalSettings.classList.add("hidden");
@@ -1601,9 +1728,18 @@ function updatePaletteUI(hex) {
     if (rangeR) rangeR.value = r;
     if (rangeG) rangeG.value = g;
     if (rangeB) rangeB.value = b;
-    if (valR) valR.textContent = r;
-    if (valG) valG.textContent = g;
-    if (valB) valB.textContent = b;
+    if (valR) {
+        if ('value' in valR) valR.value = r;
+        valR.textContent = r;
+    }
+    if (valG) {
+        if ('value' in valG) valG.value = g;
+        valG.textContent = g;
+    }
+    if (valB) {
+        if ('value' in valB) valB.value = b;
+        valB.textContent = b;
+    }
     if (inputCustomColor) inputCustomColor.value = hex;
 
     if (colorPreviewBox) {
@@ -1695,9 +1831,66 @@ function onRgbSliderChange() {
     updatePaletteUI(hex);
 }
 
+function onRgbNumInputChange(isBlur = false) {
+    let r = parseInt(valR ? valR.value : "0", 10);
+    let g = parseInt(valG ? valG.value : "0", 10);
+    let b = parseInt(valB ? valB.value : "0", 10);
+
+    if (isNaN(r)) r = 0;
+    if (isNaN(g)) g = 0;
+    if (isNaN(b)) b = 0;
+
+    if (r > 255) r = 255;
+    if (g > 255) g = 255;
+    if (b > 255) b = 255;
+    if (r < 0) r = 0;
+    if (g < 0) g = 0;
+    if (b < 0) b = 0;
+
+    if (isBlur) {
+        if (valR) valR.value = r;
+        if (valG) valG.value = g;
+        if (valB) valB.value = b;
+    }
+
+    if (rangeR) rangeR.value = r;
+    if (rangeG) rangeG.value = g;
+    if (rangeB) rangeB.value = b;
+
+    const hex = rgbToHex(r, g, b);
+    if (inputCustomColor) inputCustomColor.value = hex;
+    if (colorPreviewBox) colorPreviewBox.style.backgroundColor = hex;
+    if (colorPreviewText) colorPreviewText.textContent = hex;
+
+    const presetBtns = document.querySelectorAll(".color-preset-btn");
+    presetBtns.forEach(btn => {
+        if (btn.getAttribute("data-color").toUpperCase() === hex) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+}
+
 if (rangeR) rangeR.addEventListener("input", onRgbSliderChange);
 if (rangeG) rangeG.addEventListener("input", onRgbSliderChange);
 if (rangeB) rangeB.addEventListener("input", onRgbSliderChange);
+
+if (valR) {
+    valR.addEventListener("input", () => onRgbNumInputChange(false));
+    valR.addEventListener("change", () => onRgbNumInputChange(true));
+    valR.addEventListener("blur", () => onRgbNumInputChange(true));
+}
+if (valG) {
+    valG.addEventListener("input", () => onRgbNumInputChange(false));
+    valG.addEventListener("change", () => onRgbNumInputChange(true));
+    valG.addEventListener("blur", () => onRgbNumInputChange(true));
+}
+if (valB) {
+    valB.addEventListener("input", () => onRgbNumInputChange(false));
+    valB.addEventListener("change", () => onRgbNumInputChange(true));
+    valB.addEventListener("blur", () => onRgbNumInputChange(true));
+}
 
 if (inputCustomColor) {
     inputCustomColor.addEventListener("input", (e) => {
