@@ -95,16 +95,22 @@ function isMoonBoard(b) {
     if (idStr.startsWith("TEST_") && !idStr.includes("COSMIC")) return false;
     if (titleStr.includes("테스트") && !idStr.includes("COSMIC") && !titleStr.includes("우주") && !titleStr.includes("달")) return false;
 
-    // 2. 다른 앱 보드 배제 (건, 고양이, 채소가게, 수산시장 100% 프라이버시 격리)
+    // 2. 다른 앱 보드 배제 (건, 고양이, 채소가게, 수산시장/0427 양건 100% 프라이버시 격리)
     if (idStr.startsWith("GUN") || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") ||
-        idStr.startsWith("FISH") || idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE")) {
+        idStr.startsWith("FISH") || idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") ||
+        idStr === "0427") {
+        return false;
+    }
+    if (titleStr.includes("양건") || titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") ||
+        titleStr.includes("어시장") || titleStr.includes("채건") || titleStr.includes("채소") || titleStr.includes("야채") ||
+        titleStr.includes("건이")) {
         return false;
     }
 
-    // 3. 달/우주 전용 화이트리스트 일치 판정 (BON_WOOK_1, BON_WOOK, 1, 0427, TEST-COSMIC-BOARD 등)
-    if (idStr.startsWith("BON_WOOK") || idStr.startsWith("MOON") || idStr.startsWith("LUNAR") || idStr === "1" || idStr === "0427" || idStr === "TEST-COSMIC-BOARD") return true;
+    // 3. 달/우주 전용 화이트리스트 일치 판정 (BON_WOOK_1, BON_WOOK, 1, TEST-COSMIC-BOARD 등 욱이 보드만 허용)
+    if (idStr.startsWith("BON_WOOK") || idStr.startsWith("MOON") || idStr.startsWith("LUNAR") || idStr === "1" || idStr === "TEST-COSMIC-BOARD") return true;
     if (titleStr.includes("달") || titleStr.includes("우주") || titleStr.includes("별") || titleStr.includes("스티치") ||
-        titleStr.includes("업보") || titleStr.includes("욱이") || titleStr.includes("째욱")) return true;
+        titleStr.includes("욱이") || titleStr.includes("째욱")) return true;
     if (typeof b === 'object' && b) {
         if (b.theme === "moon" || b.app === "moon") return true;
         if (b.custom_labels && typeof b.custom_labels === "object" && b.custom_labels.app === "moon") return true;
@@ -248,6 +254,7 @@ const inputCustomColor = document.getElementById("input-custom-color");
 
 // 보드 불러오기
 async function apiGetBoard(boardId) {
+    if (!isMoonBoard(boardId)) return null;
     if (isLocalMode || !supabaseClient) {
         const localData = localStorage.getItem(`board_${boardId}`);
         if (localData) {
@@ -2339,8 +2346,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const boardParam = urlParams.get("board");
     if (boardParam) {
-        currentBoardId = boardParam.trim().toUpperCase();
-        setAppStorage("current_board_id", currentBoardId);
+        const paramId = boardParam.trim().toUpperCase();
+        if (isMoonBoard(paramId)) {
+            currentBoardId = paramId;
+            setAppStorage("current_board_id", currentBoardId);
+        } else {
+            console.warn("URL로 전달된 보드 ID가 본 앱의 보드가 아닙니다:", paramId);
+            const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+            window.history.replaceState({ path: cleanUrl }, "", cleanUrl);
+        }
     }
 
     updateRoleUI();
