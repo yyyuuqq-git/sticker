@@ -25,51 +25,110 @@ if (!isLocalMode) {
     console.log("Supabase 설정이 비어있어 '로컬 모드(기기 브라우저 저장)'로 구동됩니다.");
 }
 
+// ==========================================
+// 앱 전용 스토리지 네임스페이스 및 헬퍼
+// (동일 도메인/GitHub Pages 상에서 타 스티커판과의 간섭 100% 원천 차단)
+// ==========================================
+const APP_STORAGE_PREFIX = "moon_";
+
+function getAppStorage(key, fallback = null) {
+    try {
+        const val = localStorage.getItem(APP_STORAGE_PREFIX + key);
+        if (val !== null) return val;
+        // 기존 레거시 키 호환 지원 (보드 관련 정보는 해당 앱 전용 검증 통과 시에만 승계)
+        const legacyVal = localStorage.getItem(key);
+        if (legacyVal !== null) {
+            if (key === "current_board_id") {
+                if (typeof isMoonBoard === "function" && isMoonBoard(legacyVal)) {
+                    localStorage.setItem(APP_STORAGE_PREFIX + key, legacyVal);
+                    return legacyVal;
+                }
+                return fallback;
+            }
+            if (key === "registered_boards") {
+                try {
+                    const list = JSON.parse(legacyVal);
+                    if (typeof isMoonBoard === "function") {
+                        const filtered = list.filter(b => isMoonBoard(b));
+                        if (filtered.length > 0) {
+                            const filteredStr = JSON.stringify(filtered);
+                            localStorage.setItem(APP_STORAGE_PREFIX + key, filteredStr);
+                            return filteredStr;
+                        }
+                    }
+                } catch (e) {}
+                return fallback;
+            }
+            return legacyVal;
+        }
+    } catch (e) {
+        console.warn("getAppStorage error:", e);
+    }
+    return fallback;
+}
+
+function setAppStorage(key, val) {
+    try {
+        localStorage.setItem(APP_STORAGE_PREFIX + key, String(val));
+    } catch (e) {
+        console.warn("setAppStorage error:", e);
+    }
+}
+
+function removeAppStorage(key) {
+    try {
+        localStorage.removeItem(APP_STORAGE_PREFIX + key);
+    } catch (e) {
+        console.warn("removeAppStorage error:", e);
+    }
+}
+
+
 // 달 칭찬스티커 전용 보드 판별 (수산시장/물고기, 채소가게, 고양이 및 테스트 보드 100% 격리 - 프라이버시 엄격 보호)
 function isMoonBoard(b) {
     if (!b) return false;
-    const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
-    const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
-    
-    // 1. 테스트 보드 배제 (TEST_BOARD_x, TEST-BOARD-xxx 등, 레거시 TEST-COSMIC-BOARD는 허용)
+    const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase().trim();
+    const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase().trim();
+
+    // 1. 테스트 보드 배제 (레거시 TEST-COSMIC-BOARD는 허용)
     if (idStr.startsWith("TEST-BOARD") || idStr.startsWith("TEST_BOARD") || idStr === "TEST-BOARD" || idStr === "TEST_BOARD") return false;
     if (idStr.startsWith("TEST_") && !idStr.includes("COSMIC")) return false;
     if (titleStr.includes("테스트") && !idStr.includes("COSMIC") && !titleStr.includes("우주") && !titleStr.includes("달")) return false;
 
-    // 2. 수산시장 / 물고기 / 싱싱 어류 보드 배제 (0427, 양건, FISH 등 100% 프라이버시 격리)
-    if (idStr === "0427" || titleStr.includes("양건") || idStr.startsWith("FISH") || idStr.includes("FISH") || 
-        titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") || 
-        titleStr.includes("어시장") || titleStr.includes("광어") || titleStr.includes("우럭") || 
-        titleStr.includes("연어") || titleStr.includes("고등어") || titleStr.includes("참치") || 
-        titleStr.includes("문어") || titleStr.includes("오징어") || titleStr.includes("새우") || 
-        titleStr.includes("해산물") || titleStr.includes("바다") || titleStr.includes("츄르")) return false;
+    // 2. 다른 앱 보드 배제 (건, 고양이, 채소가게, 수산시장 100% 프라이버시 격리)
+    if (idStr.startsWith("GUN") || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") ||
+        idStr.startsWith("FISH") || idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE")) {
+        return false;
+    }
 
-    // 3. 채소가게 보드 배제 (CHAEDO_, VEGE_ 등)
-    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") || 
-        titleStr.includes("채소") || titleStr.includes("야채") || titleStr.includes("당근") || titleStr.includes("채건")) return false;
+    // 3. 달/우주 전용 화이트리스트 일치 판정 (BON_WOOK_1, BON_WOOK, 1, 0427, TEST-COSMIC-BOARD 등)
+    if (idStr.startsWith("BON_WOOK") || idStr.startsWith("MOON") || idStr.startsWith("LUNAR") || idStr === "1" || idStr === "0427" || idStr === "TEST-COSMIC-BOARD") return true;
+    if (titleStr.includes("달") || titleStr.includes("우주") || titleStr.includes("별") || titleStr.includes("스티치") ||
+        titleStr.includes("업보") || titleStr.includes("욱이") || titleStr.includes("째욱")) return true;
+    if (typeof b === 'object' && b) {
+        if (b.theme === "moon" || b.app === "moon") return true;
+        if (b.custom_labels && typeof b.custom_labels === "object" && b.custom_labels.app === "moon") return true;
+    }
 
-    // 4. 레거시 고양이 보드 배제 (CAT-BOARD, KITTY, MEOW, 고양이, 야옹 등)
-    if (idStr === "CAT-BOARD" || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") || 
-        titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
-
-    return true;
+    // 그 외 일치하지 않는 보드는 100% 거부
+    return false;
 }
 
-let initialBoardId = localStorage.getItem("current_board_id");
+let initialBoardId = getAppStorage("current_board_id");
 if (!initialBoardId || !isMoonBoard(initialBoardId) || initialBoardId.startsWith("TEST-") || initialBoardId.startsWith("TEST_")) {
     const regList = (function() {
         try {
-            const list = JSON.parse(localStorage.getItem("registered_boards") || "[]");
+            const list = JSON.parse(getAppStorage("registered_boards") || "[]");
             return list.filter(b => isMoonBoard(b) && !String(typeof b === 'string' ? b : (b.id || '')).toUpperCase().startsWith("TEST-") && !String(typeof b === 'string' ? b : (b.id || '')).toUpperCase().startsWith("TEST_"));
         } catch(e) { return []; }
     })();
     initialBoardId = (regList.length > 0) ? regList[0].id : "BON_WOOK";
-    localStorage.setItem("current_board_id", initialBoardId);
+    setAppStorage("current_board_id", initialBoardId);
 }
 let currentBoardId = initialBoardId || "BON_WOOK";
 let currentBoard = null;
 let currentStickers = [];
-let isEditorMode = localStorage.getItem("is_editor") === "true";
+let isEditorMode = getAppStorage("is_editor") === "true";
 let deleteTargetIndex = null;
 let deleteTargetBoardId = null;
 let memoTargetIndex = null;
@@ -646,7 +705,7 @@ async function apiUpdateBoardTitle(boardId, newTitle) {
 async function openBoardEditModal(board) {
     let fullBoard = (await apiGetBoard(board.id)) || board;
     editTargetBoard = fullBoard;
-    const hasPermission = localStorage.getItem("is_editor") === "true";
+    const hasPermission = getAppStorage("is_editor") === "true";
 
     if (hasPermission) {
         if (editBoardTitle) editBoardTitle.disabled = false;
@@ -671,11 +730,11 @@ async function openBoardEditModal(board) {
 
 // 등록된 보드 목록 관리 헬퍼 함수들
 function getRegisteredBoards() {
-    const list = localStorage.getItem("registered_boards");
+    const list = getAppStorage("registered_boards");
     const parsed = list ? JSON.parse(list) : [];
     const filtered = parsed.filter(b => isMoonBoard(b));
     if (parsed.length !== filtered.length) {
-        localStorage.setItem("registered_boards", JSON.stringify(filtered));
+        setAppStorage("registered_boards", JSON.stringify(filtered));
     }
     return filtered.map(b => {
         if (b && b.title && (b.title.includes("우주") || b.title.includes("칭찬나라") || b.title.includes("스티커핀"))) {
@@ -696,16 +755,16 @@ function addRegisteredBoard(boardId, title, rewardText) {
     } else {
         list.push({ id: boardId, title: title, reward_text: rewardText || "" });
     }
-    localStorage.setItem("registered_boards", JSON.stringify(list));
+    setAppStorage("registered_boards", JSON.stringify(list));
 }
 
 function getBoardOrder() {
-    const saved = localStorage.getItem("board_order");
+    const saved = getAppStorage("board_order");
     return saved ? JSON.parse(saved) : [];
 }
 
 function saveBoardOrder(orderedIds) {
-    localStorage.setItem("board_order", JSON.stringify(orderedIds));
+    setAppStorage("board_order", JSON.stringify(orderedIds));
 
     let list = getRegisteredBoards();
     list.sort((a, b) => {
@@ -715,16 +774,16 @@ function saveBoardOrder(orderedIds) {
         if (idxB === -1) return -1;
         return idxA - idxB;
     });
-    localStorage.setItem("registered_boards", JSON.stringify(list));
+    setAppStorage("registered_boards", JSON.stringify(list));
 }
 
 function removeRegisteredBoard(boardId) {
     let list = getRegisteredBoards();
     list = list.filter(b => b.id !== boardId);
-    localStorage.setItem("registered_boards", JSON.stringify(list));
+    setAppStorage("registered_boards", JSON.stringify(list));
 
     const orderList = getBoardOrder().filter(id => id !== boardId);
-    localStorage.setItem("board_order", JSON.stringify(orderList));
+    setAppStorage("board_order", JSON.stringify(orderList));
 
     if (currentBoardId === boardId) {
         if (list.length > 0) {
@@ -732,7 +791,7 @@ function removeRegisteredBoard(boardId) {
         } else {
             currentBoardId = "DEFAULT";
         }
-        localStorage.setItem("current_board_id", currentBoardId);
+        setAppStorage("current_board_id", currentBoardId);
     }
 }
 
@@ -772,7 +831,7 @@ async function renderBoardList(force = false) {
         });
     }
 
-    const canEditNow = localStorage.getItem("is_editor") === "true";
+    const canEditNow = getAppStorage("is_editor") === "true";
     const fingerprint = canEditNow + '#' + combinedList.map(b => `${b.id}:${b.title}:${b.reward_text}:${b.id === currentBoardId}`).join('|');
 
     if (!force && fingerprint === lastBoardListFingerprint) {
@@ -815,7 +874,7 @@ function createBoardItemDOM(board, isLocal) {
     item.className = `board-item ${isActive ? "active" : ""}`;
     item.dataset.boardId = board.id;
 
-    const hasPermission = localStorage.getItem("is_editor") === "true";
+    const hasPermission = getAppStorage("is_editor") === "true";
 
     const editButtonHtml = `
         <button class="btn-edit-board" title="스티커판 정보 수정" aria-label="스티커판 정보 수정">
@@ -859,8 +918,8 @@ function createBoardItemDOM(board, isLocal) {
         sidebarOverlay.classList.add("hidden");
 
         currentBoardId = board.id;
-        localStorage.setItem("current_board_id", currentBoardId);
-        isEditorMode = localStorage.getItem("is_editor") === "true";
+        setAppStorage("current_board_id", currentBoardId);
+        isEditorMode = getAppStorage("is_editor") === "true";
         updateRoleUI();
         await refreshApp();
 
@@ -887,7 +946,7 @@ function createBoardItemDOM(board, isLocal) {
         if (fromHandle) e.preventDefault();
 
         pressTimer = setTimeout(() => {
-            const canEdit = localStorage.getItem("is_editor") === "true";
+            const canEdit = getAppStorage("is_editor") === "true";
             if (!canEdit) {
                 showToast("편집자 권한(여자친구 모드)에서만 스티커판 순서를 변경할 수 있습니다. 🔒");
                 return;
@@ -1078,22 +1137,22 @@ async function refreshApp() {
             const registered = getRegisteredBoards();
             if (registered.length > 0 && isMoonBoard(registered[0])) {
                 currentBoardId = registered[0].id;
-                localStorage.setItem("current_board_id", currentBoardId);
+                setAppStorage("current_board_id", currentBoardId);
                 board = await apiGetBoard(currentBoardId);
             } else {
                 currentBoardId = "BON_WOOK";
-                localStorage.setItem("current_board_id", currentBoardId);
+                setAppStorage("current_board_id", currentBoardId);
                 board = await apiGetBoard(currentBoardId);
                 if (!board) {
                     currentBoardId = "TEST-COSMIC-BOARD";
-                    localStorage.setItem("current_board_id", currentBoardId);
+                    setAppStorage("current_board_id", currentBoardId);
                     board = await apiGetBoard(currentBoardId);
                 }
             }
         }
         if (!board && (currentBoardId === "DEFAULT" || !currentBoardId)) {
             currentBoardId = "TEST-COSMIC-BOARD";
-            localStorage.setItem("current_board_id", currentBoardId);
+            setAppStorage("current_board_id", currentBoardId);
             board = await apiGetBoard(currentBoardId);
         }
 
@@ -1454,7 +1513,7 @@ btnPinSubmit.addEventListener("click", () => {
 
     if (pin === requiredPin) {
         isEditorMode = true;
-        localStorage.setItem("is_editor", "true");
+        setAppStorage("is_editor", "true");
         localStorage.setItem(`board_pin_${currentBoardId}`, pin);
         inputPin.value = "";
         pinError.classList.add("hidden");
@@ -1477,7 +1536,7 @@ btnPinCancel.addEventListener("click", () => {
 btnToggleRole.addEventListener("click", () => {
     if (isEditorMode) {
         isEditorMode = false;
-        localStorage.removeItem("is_editor"); // 로그아웃 시 인증 승인 기록 삭제
+        removeAppStorage("is_editor"); // 로그아웃 시 인증 승인 기록 삭제
         updateRoleUI();
         refreshApp();
         showToast("조회 전용 모드로 복귀했습니다.");
@@ -1527,11 +1586,11 @@ btnCreateBoard.addEventListener("click", async () => {
     const result = await apiCreateBoard(newBoard);
     if (result.success) {
         currentBoardId = finalCode;
-        localStorage.setItem("current_board_id", finalCode);
+        setAppStorage("current_board_id", finalCode);
         localStorage.setItem(`board_pin_${finalCode}`, activePin);
         localStorage.setItem(`board_theme_color_${finalCode}`, activeColor);
         await apiSaveThemeColor(finalCode, activeColor);
-        localStorage.setItem("is_editor", "true");
+        setAppStorage("is_editor", "true");
         inputCreateBoardTitle.value = "";
         isEditorMode = true;
         updateRoleUI();
@@ -1891,7 +1950,7 @@ btnSwitchBoard.addEventListener("click", async () => {
     const board = await apiGetBoard(code);
     if (board) {
         currentBoardId = code;
-        localStorage.setItem("current_board_id", code);
+        setAppStorage("current_board_id", code);
         inputSwitchBoard.value = "";
         isEditorMode = false; // 새로운 보드로 이동할 때는 기본 뷰어 모드로 안전화
         updateRoleUI();
@@ -1948,7 +2007,7 @@ btnSettingsSave.addEventListener("click", async () => {
 // 칭찬판 정보 수정 저장 처리 (길게 누르기 모달)
 btnBoardEditSave.addEventListener("click", async () => {
     if (!editTargetBoard) return;
-    const hasPermission = localStorage.getItem("is_editor") === "true";
+    const hasPermission = getAppStorage("is_editor") === "true";
     if (!hasPermission) return;
 
     const count = parseInt(editBoardTargetCount.value);
@@ -2009,7 +2068,7 @@ btnDeleteConfirm.addEventListener("click", async () => {
         if (wasActive) {
             sidebar.classList.remove("open");
             sidebarOverlay.classList.add("hidden");
-            isEditorMode = localStorage.getItem("is_editor") === "true";
+            isEditorMode = getAppStorage("is_editor") === "true";
             updateRoleUI();
             const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
             window.history.replaceState({ path: newUrl }, "", newUrl);
@@ -2248,31 +2307,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // [소독 패치] 로컬스토리지 내 타 폴더 및 테스트 칭찬판 찌꺼기 100% 완전 정제 (프라이버시 보호)
     try {
-        const boards = JSON.parse(localStorage.getItem("registered_boards") || "[]");
+        const boards = JSON.parse(getAppStorage("registered_boards") || "[]");
         const cleaned = boards.filter(b => isMoonBoard(b));
-        localStorage.setItem("registered_boards", JSON.stringify(cleaned));
+        setAppStorage("registered_boards", JSON.stringify(cleaned));
 
         // 현재 선택된 보드가 달 보드가 아니면 안전한 달 보드로 강제 전환
-        let curId = localStorage.getItem("current_board_id");
+        let curId = getAppStorage("current_board_id");
         if (!curId || !isMoonBoard(curId)) {
             const fallbackId = (cleaned.length > 0) ? cleaned[0].id : "BON_WOOK";
-            localStorage.setItem("current_board_id", fallbackId);
+            setAppStorage("current_board_id", fallbackId);
             currentBoardId = fallbackId;
         }
 
         // 보드 정렬 순서 정제
-        const order = JSON.parse(localStorage.getItem("board_order") || "[]");
+        const order = JSON.parse(getAppStorage("board_order") || "[]");
         const cleanedOrder = order.filter(id => isMoonBoard(id));
-        localStorage.setItem("board_order", JSON.stringify(cleanedOrder));
+        setAppStorage("board_order", JSON.stringify(cleanedOrder));
 
-        // 타 앱 보드 개별 캐시 찌꺼기 완전 삭제
+        // 테스트 보드 캐시만 안전하게 정리 (타 앱 보드는 절대 건드리지 않음)
         for (let i = localStorage.length - 1; i >= 0; i--) {
             const k = localStorage.key(i);
-            if (k && (k.startsWith("board_") || k.startsWith("stickers_"))) {
-                const subId = k.replace("board_", "").replace("stickers_", "");
-                if (!isMoonBoard(subId)) {
-                    localStorage.removeItem(k);
-                }
+            if (k && (k.startsWith("board_TEST") || k.startsWith("stickers_TEST"))) {
+                localStorage.removeItem(k);
             }
         }
     } catch (e) {
@@ -2284,7 +2340,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const boardParam = urlParams.get("board");
     if (boardParam) {
         currentBoardId = boardParam.trim().toUpperCase();
-        localStorage.setItem("current_board_id", currentBoardId);
+        setAppStorage("current_board_id", currentBoardId);
     }
 
     updateRoleUI();
@@ -2365,8 +2421,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await apiCreateBoard(newBoard);
         if (result.success) {
             currentBoardId = code;
-            localStorage.setItem("current_board_id", code);
-            localStorage.setItem("is_editor", "true");
+            setAppStorage("current_board_id", code);
+            setAppStorage("is_editor", "true");
             isEditorMode = true;
             updateRoleUI();
             await refreshApp();
