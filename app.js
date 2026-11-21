@@ -95,20 +95,20 @@ function isMoonBoard(b) {
     if (idStr.startsWith("TEST_") && !idStr.includes("COSMIC")) return false;
     if (titleStr.includes("테스트") && !idStr.includes("COSMIC") && !titleStr.includes("우주") && !titleStr.includes("달")) return false;
 
-    // 2. 다른 앱 보드 및 레거시 ID 배제 (건, 고양이, 채소가게, 수산시장/0427, 1 등 100% 프라이버시 격리)
+    // 2. 다른 앱 보드 및 레거시 ID 배제 (건, 고양이, 채소가게, 레거시 1 등 100% 프라이버시 격리)
     if (idStr.startsWith("GUN") || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") ||
         idStr.startsWith("FISH") || idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") ||
-        idStr === "0427" || idStr === "1") {
+        idStr === "1") {
         return false;
     }
-    if (titleStr.includes("양건") || titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") ||
+    if ((titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") ||
         titleStr.includes("어시장") || titleStr.includes("채건") || titleStr.includes("채소") || titleStr.includes("야채") ||
-        titleStr.includes("건이")) {
+        titleStr.includes("건이")) && idStr !== "0427") {
         return false;
     }
 
-    // 3. 달/우주 전용 화이트리스트 일치 판정 (BON_WOOK 접두사 중심 욱이 보드만 허용)
-    if (idStr.startsWith("BON_WOOK") || idStr.startsWith("MOON") || idStr.startsWith("LUNAR") || idStr === "TEST-COSMIC-BOARD") return true;
+    // 3. 달/우주 전용 화이트리스트 일치 판정 (BON_WOOK 접두사 및 0427 양건의 업보스택 허용)
+    if (idStr.startsWith("BON_WOOK") || idStr.startsWith("MOON") || idStr.startsWith("LUNAR") || idStr === "0427" || idStr === "TEST-COSMIC-BOARD") return true;
     if (titleStr.includes("달") || titleStr.includes("우주") || titleStr.includes("별") || titleStr.includes("스티치") ||
         titleStr.includes("욱이") || titleStr.includes("째욱")) return true;
     if (typeof b === 'object' && b) {
