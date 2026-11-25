@@ -203,19 +203,6 @@
                         placeholder="예: 스티커판, 채소가게, 야옹이 칭찬나라" disabled>
                 </div>
                 <div class="form-group">
-                    <label for="edit-sticker-theme">스티커 테마</label>
-                    <select id="edit-sticker-theme" class="editor-only-field" disabled>
-                        <option value="moon">달빛 친구들 🌙 (기본)</option>
-                        <option value="ocean">푸른 바다 친구들 🌊</option>
-                        <option value="forest">초록 숲 친구들 🌿</option>
-                        <option value="star">우주 별빛 친구들 ✨</option>
-                        <option value="pastel">달콤 파스텔 친구들 🌸</option>
-                    </select>
-                    <small class="helper-text">이 보드의 스티커 모양과 분위기를 바꿉니다.</small>
-                    <!-- 테마 스티커 5종 실시간 미리보기 -->
-                    <div id="theme-sticker-preview-bar" class="theme-sticker-preview-bar"></div>
-                </div>
-                <div class="form-group">
                     <label for="edit-pin">편집용 비밀번호 PIN</label>
                     <input type="password" id="edit-pin" class="editor-only-field" disabled>
                 </div>
@@ -254,23 +241,10 @@
     <div id="modal-share" class="modal-overlay hidden">
         <div class="modal-content">
             <h3 class="modal-title">🆕 새 칭찬판 만들기</h3>
-            <p class="modal-desc">새로 만들 칭찬판의 이름과 스티커 테마를 선택해 주세요.</p>
+            <p class="modal-desc">새로 만들 칭찬판의 이름을 입력해 주세요.</p>
 
             <div class="form-group" style="margin-top: 16px;">
-                <label for="input-create-board-title" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">칭찬판 이름</label>
                 <input type="text" id="input-create-board-title" placeholder="칭찬판 이름 (예: 우리의 새로운 칭찬판 💖)">
-            </div>
-
-            <div class="form-group" style="margin-top: 12px;">
-                <label for="create-board-theme" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">스티커 테마 선택</label>
-                <select id="create-board-theme">
-                    <option value="moon">달빛 친구들 🌙 (기본)</option>
-                    <option value="ocean">푸른 바다 친구들 🌊</option>
-                    <option value="forest">초록 숲 친구들 🌿</option>
-                    <option value="star">우주 별빛 친구들 ✨</option>
-                    <option value="pastel">달콤 파스텔 친구들 🌸</option>
-                </select>
-                <div id="create-theme-preview-bar" class="theme-sticker-preview-bar"></div>
             </div>
 
             <div class="modal-actions" style="margin-top: 24px;">
@@ -280,15 +254,15 @@
         </div>
     </div>
 
-    <!-- E. 감성 칭찬 스티커 선택 & 메모 작성 모달 -->
+    <!-- E. 3D 해양생물 스티커 선택 & 메모 작성 모달 -->
     <div id="modal-memo-input" class="modal-overlay hidden">
         <div class="modal-content scrollable" style="max-width: 440px;">
-            <h3 id="modal-memo-input-title" class="modal-title">✨ 칭찬 스티커 선택</h3>
-            <p id="modal-memo-input-desc" class="modal-desc">붙이고 싶은 예쁜 스티커를 선택해 주세요!</p>
+            <h3 class="modal-title">🌊 3D 해양생물 스티커 선택</h3>
+            <p class="modal-desc">붙이고 싶은 귀여운 해양생물 스티커를 선택해 주세요!</p>
 
             <!-- 스티커 선택 그리드 -->
             <div id="sticker-select-grid" class="sticker-select-grid">
-                <!-- 자바스크립트로 선택된 테마의 5종 스티커 아이템 동적 생성 -->
+                <!-- 자바스크립트로 10종 3D 스티커 아이템 동적 생성 -->
             </div>
 
             <div class="form-group" style="margin-top: 14px;">
@@ -367,7 +341,7 @@
 
             <!-- 실시간 색상 미리보기 박스 -->
             <div id="color-preview-box" class="color-preview-box">
-                <span id="color-preview-text" class="color-preview-text">#4A5568</span>
+                <input type="text" id="color-preview-text" class="color-preview-text color-preview-input" value="#4A5568" maxlength="7" spellcheck="false" autocomplete="off" aria-label="16진수 색상 코드 직접 입력">
             </div>
 
             <!-- 1. 추천 대표 프리셋 색상 -->
@@ -438,7 +412,6 @@
     <div id="toast" class="toast hidden"></div>
 
     <!-- 커스텀 JS (모바일 기기 브라우저 캐시 방지) -->
-    <script src="theme-stickers.js?v=4.0.0-responsive"></script>
     <script src="app.js?v=4.0.0-responsive"></script>
 </body>
 

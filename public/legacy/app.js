@@ -25,51 +25,115 @@ if (!isLocalMode) {
     console.log("Supabase 설정이 비어있어 '로컬 모드(기기 브라우저 저장)'로 구동됩니다.");
 }
 
+// ==========================================
+// 앱 전용 스토리지 네임스페이스 및 헬퍼
+// (동일 도메인/GitHub Pages 상에서 타 스티커판과의 간섭 100% 원천 차단)
+// ==========================================
+const APP_STORAGE_PREFIX = "moon_";
+
+function getAppStorage(key, fallback = null) {
+    try {
+        const val = localStorage.getItem(APP_STORAGE_PREFIX + key);
+        if (val !== null) return val;
+        // 기존 레거시 키 호환 지원 (보드 관련 정보는 해당 앱 전용 검증 통과 시에만 승계)
+        const legacyVal = localStorage.getItem(key);
+        if (legacyVal !== null) {
+            if (key === "current_board_id") {
+                if (typeof isMoonBoard === "function" && isMoonBoard(legacyVal)) {
+                    localStorage.setItem(APP_STORAGE_PREFIX + key, legacyVal);
+                    return legacyVal;
+                }
+                return fallback;
+            }
+            if (key === "registered_boards") {
+                try {
+                    const list = JSON.parse(legacyVal);
+                    if (typeof isMoonBoard === "function") {
+                        const filtered = list.filter(b => isMoonBoard(b));
+                        if (filtered.length > 0) {
+                            const filteredStr = JSON.stringify(filtered);
+                            localStorage.setItem(APP_STORAGE_PREFIX + key, filteredStr);
+                            return filteredStr;
+                        }
+                    }
+                } catch (e) {}
+                return fallback;
+            }
+            return legacyVal;
+        }
+    } catch (e) {
+        console.warn("getAppStorage error:", e);
+    }
+    return fallback;
+}
+
+function setAppStorage(key, val) {
+    try {
+        localStorage.setItem(APP_STORAGE_PREFIX + key, String(val));
+    } catch (e) {
+        console.warn("setAppStorage error:", e);
+    }
+}
+
+function removeAppStorage(key) {
+    try {
+        localStorage.removeItem(APP_STORAGE_PREFIX + key);
+    } catch (e) {
+        console.warn("removeAppStorage error:", e);
+    }
+}
+
+
 // 달 칭찬스티커 전용 보드 판별 (수산시장/물고기, 채소가게, 고양이 및 테스트 보드 100% 격리 - 프라이버시 엄격 보호)
 function isMoonBoard(b) {
     if (!b) return false;
-    const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
-    const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
-    
-    // 1. 테스트 보드 배제 (TEST_BOARD_x, TEST-BOARD-xxx 등, 레거시 TEST-COSMIC-BOARD는 허용)
+    const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase().trim();
+    const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase().trim();
+
+    // 1. 테스트 보드 배제 (레거시 TEST-COSMIC-BOARD는 허용)
     if (idStr.startsWith("TEST-BOARD") || idStr.startsWith("TEST_BOARD") || idStr === "TEST-BOARD" || idStr === "TEST_BOARD") return false;
     if (idStr.startsWith("TEST_") && !idStr.includes("COSMIC")) return false;
     if (titleStr.includes("테스트") && !idStr.includes("COSMIC") && !titleStr.includes("우주") && !titleStr.includes("달")) return false;
 
-    // 2. 수산시장 / 물고기 / 싱싱 어류 보드 배제 (0427, 양건, FISH 등 100% 프라이버시 격리)
-    if (idStr === "0427" || titleStr.includes("양건") || idStr.startsWith("FISH") || idStr.includes("FISH") || 
-        titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") || 
-        titleStr.includes("어시장") || titleStr.includes("광어") || titleStr.includes("우럭") || 
-        titleStr.includes("연어") || titleStr.includes("고등어") || titleStr.includes("참치") || 
-        titleStr.includes("문어") || titleStr.includes("오징어") || titleStr.includes("새우") || 
-        titleStr.includes("해산물") || titleStr.includes("바다") || titleStr.includes("츄르")) return false;
+    // 2. 다른 앱 보드 배제 (건, 고양이, 채소가게, 수산시장 FISH 100% 프라이버시 격리, 레거시 숫자 보드 0427, 1 허용)
+    if (idStr.startsWith("GUN") || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") ||
+        idStr.startsWith("FISH") || idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE")) {
+        return false;
+    }
+    if ((titleStr.includes("양건") || titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") ||
+        titleStr.includes("어시장") || titleStr.includes("채건") || titleStr.includes("채소") || titleStr.includes("야채") ||
+        titleStr.includes("건이")) && idStr !== "0427") {
+        return false;
+    }
 
-    // 3. 채소가게 보드 배제 (CHAEDO_, VEGE_ 등)
-    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") || 
-        titleStr.includes("채소") || titleStr.includes("야채") || titleStr.includes("당근") || titleStr.includes("채건")) return false;
+    // 3. 달/우주 전용 화이트리스트 일치 판정 (BON_WOOK 접두사 및 숫자 보드 0427, 1 허용)
+    if (idStr.startsWith("BON_WOOK") || idStr.startsWith("MOON") || idStr.startsWith("LUNAR") || idStr === "0427" || idStr === "1" || idStr === "TEST-COSMIC-BOARD") return true;
+    if (titleStr.includes("달") || titleStr.includes("우주") || titleStr.includes("별") || titleStr.includes("스티치") ||
+        titleStr.includes("욱이") || titleStr.includes("째욱")) return true;
+    if (typeof b === 'object' && b) {
+        if (b.theme === "moon" || b.app === "moon") return true;
+        if (b.custom_labels && typeof b.custom_labels === "object" && b.custom_labels.app === "moon") return true;
+    }
 
-    // 4. 레거시 고양이 보드 배제 (CAT-BOARD, KITTY, MEOW, 고양이, 야옹 등)
-    if (idStr === "CAT-BOARD" || idStr.startsWith("CAT") || idStr.includes("KITTY") || idStr.includes("MEOW") || 
-        titleStr.includes("고양이") || titleStr.includes("야옹")) return false;
-
-    return true;
+    // 그 외 일치하지 않는 보드는 100% 거부
+    return false;
 }
 
-let initialBoardId = localStorage.getItem("current_board_id");
+let initialBoardId = getAppStorage("current_board_id");
 if (!initialBoardId || !isMoonBoard(initialBoardId) || initialBoardId.startsWith("TEST-") || initialBoardId.startsWith("TEST_")) {
     const regList = (function() {
         try {
-            const list = JSON.parse(localStorage.getItem("registered_boards") || "[]");
+            const list = JSON.parse(getAppStorage("registered_boards") || "[]");
             return list.filter(b => isMoonBoard(b) && !String(typeof b === 'string' ? b : (b.id || '')).toUpperCase().startsWith("TEST-") && !String(typeof b === 'string' ? b : (b.id || '')).toUpperCase().startsWith("TEST_"));
         } catch(e) { return []; }
     })();
     initialBoardId = (regList.length > 0) ? regList[0].id : "BON_WOOK";
-    localStorage.setItem("current_board_id", initialBoardId);
+    setAppStorage("current_board_id", initialBoardId);
 }
 let currentBoardId = initialBoardId || "BON_WOOK";
 let currentBoard = null;
 let currentStickers = [];
-let isEditorMode = localStorage.getItem("is_editor") === "true";
+let isEditorMode = getAppStorage("is_editor") === "true";
 let deleteTargetIndex = null;
 let deleteTargetBoardId = null;
 let memoTargetIndex = null;
@@ -112,7 +176,6 @@ const inputSwitchBoard = document.getElementById("input-switch-board");
 const btnSwitchBoard = document.getElementById("btn-switch-board");
 const appMainLogo = document.getElementById("app-main-logo");
 const editAppTitle = document.getElementById("edit-app-title");
-const editStickerTheme = document.getElementById("edit-sticker-theme");
 const editPin = document.getElementById("edit-pin");
 const editReaderName = document.getElementById("edit-reader-name");
 const editEditorName = document.getElementById("edit-editor-name");
@@ -190,6 +253,7 @@ const inputCustomColor = document.getElementById("input-custom-color");
 
 // 보드 불러오기
 async function apiGetBoard(boardId) {
+    if (!isMoonBoard(boardId)) return null;
     if (isLocalMode || !supabaseClient) {
         const localData = localStorage.getItem(`board_${boardId}`);
         if (localData) {
@@ -466,99 +530,16 @@ async function apiSaveThemeColor(boardId, hex) {
 }
 
 // ==========================================
-// 5. 감성 칭찬 스티커 5개 테마 컬렉션 및 SVG 렌더러 (theme-stickers.js 모듈 연동)
+// 5. 감성 칭찬 스티커 5종 컬렉션 (달, 태양, 가오리, 파도, 고래)
 // ==========================================
-const PRAISE_STICKERS = (typeof window !== 'undefined' && window.PRAISE_STICKERS) ? window.PRAISE_STICKERS : [
-    { id: 0, name: "초승달", emoji: "🌙", src: "stickers/moon.png", desc: "은은하고 고요한 달빛 초승달" },
-    { id: 1, name: "태양", emoji: "☀️", src: "stickers/sun.png", desc: "세상을 환히 비추는 포근한 태양" },
-    { id: 2, name: "가오리", emoji: "🌊", src: "stickers/ray.png", desc: "밤하늘 은하수를 유영하는 하늘가오리" },
-    { id: 3, name: "파도", emoji: "🌊", src: "stickers/wave.png", desc: "별빛을 머금은 잔잔한 파도" },
-    { id: 4, name: "고래", emoji: "🐋", src: "stickers/whale.png", desc: "꿈과 희망을 품은 밤하늘 고래" }
+const PRAISE_STICKERS = [
+    { id: 0, name: "초승달", emoji: "", src: "stickers/moon.png", desc: "초승달" },
+    { id: 1, name: "태양", emoji: "", src: "stickers/sun.png", desc: "태양" },
+    { id: 2, name: "가오리", emoji: "", src: "stickers/ray.png", desc: "가오리" },
+    { id: 3, name: "파도", emoji: "", src: "stickers/wave.png", desc: "파도" },
+    { id: 4, name: "고래", emoji: "", src: "stickers/whale.png", desc: "고래" }
 ];
-const SEA_CREATURES = PRAISE_STICKERS; // 레거시 호환성 유지
-
-const STICKER_THEMES = (typeof window !== 'undefined' && window.STICKER_THEMES) ? window.STICKER_THEMES : {
-    moon: {
-        id: "moon",
-        name: "달빛 친구들 🌙",
-        themeColor: "#4A5568",
-        desc: "고요하고 은은한 달빛과 밤하늘 테마",
-        items: PRAISE_STICKERS
-    }
-};
-
-function normalizeStickerTheme(theme) {
-    if (typeof window !== 'undefined' && typeof window.normalizeStickerTheme === 'function') {
-        return window.normalizeStickerTheme(theme);
-    }
-    if (!theme) return "moon";
-    const clean = String(theme).toLowerCase().trim();
-    return STICKER_THEMES[clean] ? clean : "moon";
-}
-
-function getActiveStickerTheme() {
-    let theme = localStorage.getItem("board_sticker_theme_" + currentBoardId);
-    if (!theme && currentBoard && currentBoard.custom_labels && currentBoard.custom_labels.theme) {
-        theme = currentBoard.custom_labels.theme;
-    }
-    return normalizeStickerTheme(theme);
-}
-
-function getThemeVectorGraphic(theme, type) {
-    if (typeof window !== 'undefined' && typeof window.getThemeVectorGraphic === 'function') {
-        return window.getThemeVectorGraphic(theme, type);
-    }
-    return "";
-}
-
-function getThemeStickerMarkup(theme, type) {
-    if (typeof window !== 'undefined' && typeof window.getThemeStickerMarkup === 'function') {
-        return window.getThemeStickerMarkup(theme, type);
-    }
-    const id = Math.abs(Number(type) || 0) % 5;
-    const item = PRAISE_STICKERS[id] || PRAISE_STICKERS[0];
-    return `<img src="${item.src}" alt="${item.name}" class="praise-sticker-img" draggable="false" />`;
-}
-
-function renderThemePreviewBar(container, theme) {
-    if (typeof window !== 'undefined' && typeof window.renderThemePreviewBar === 'function') {
-        return window.renderThemePreviewBar(container, theme);
-    }
-}
-
-async function saveStickerTheme(theme) {
-    const value = normalizeStickerTheme(theme);
-    localStorage.setItem(`board_sticker_theme_${currentBoardId}`, value);
-    if (currentBoard) {
-        if (!currentBoard.custom_labels) currentBoard.custom_labels = {};
-        currentBoard.custom_labels.theme = value;
-    }
-
-    const now = new Date().toISOString();
-    const memo = `[sticker-theme:${value}]`;
-    if (isLocalMode || !supabaseClient) {
-        const stickers = await apiGetStickers(currentBoardId);
-        const meta = stickers.find(item => item.sticker_index === 998);
-        if (meta) {
-            Object.assign(meta, { memo, updated_at: now });
-        } else {
-            stickers.push({ board_id: currentBoardId, sticker_index: 998, memo, created_at: now, updated_at: now });
-        }
-        localStorage.setItem(`stickers_${currentBoardId}`, JSON.stringify(stickers));
-        return true;
-    }
-
-    try {
-        const { error } = await supabaseClient.from("praise_stickers").upsert(
-            { board_id: currentBoardId, sticker_index: 998, memo, created_at: now, updated_at: now },
-            { onConflict: "board_id,sticker_index" }
-        );
-        return !error;
-    } catch (e) {
-        console.error("테마 저장 DB 싱크 예외 발생:", e);
-        return false;
-    }
-}
+const SEA_CREATURES = PRAISE_STICKERS; // 레거시 참조 및 하위 호환성 보장용 별칭
 
 let selectedStickerType = 0;
 
@@ -571,11 +552,9 @@ function parseStickerMemo(rawMemo) {
     return { type: null, memo: rawMemo };
 }
 
-function getStickerData(type, theme = null) {
-    const safeTheme = normalizeStickerTheme(theme || getActiveStickerTheme());
-    const themeObj = STICKER_THEMES[safeTheme] || STICKER_THEMES.moon;
-    const safeType = Math.abs(Number(type) || 0) % themeObj.items.length;
-    return themeObj.items[safeType] || themeObj.items[0];
+function getStickerData(type) {
+    const safeType = Math.abs(Number(type) || 0) % PRAISE_STICKERS.length;
+    return PRAISE_STICKERS[safeType] || PRAISE_STICKERS[0];
 }
 
 function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
@@ -583,12 +562,12 @@ function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
         return "";
     }
     const parsed = parseStickerMemo(rawMemo);
-    const type = (parsed.type !== null && parsed.type >= 0) ? (parsed.type % 5) : (index % 5);
-    const theme = getActiveStickerTheme();
+    const type = (parsed.type !== null && parsed.type >= 0) ? (parsed.type % PRAISE_STICKERS.length) : (index % PRAISE_STICKERS.length);
+    const item = getStickerData(type);
 
     return `
         <div class="sticker-img-container active">
-            ${getThemeStickerMarkup(theme, type)}
+            <img src="${item.src}" alt="${item.name}" class="praise-sticker-img" draggable="false" />
         </div>
     `;
 }
@@ -598,39 +577,25 @@ function renderStickerPickerGrid() {
     if (!gridContainer) return;
     gridContainer.innerHTML = "";
 
-    if (selectedStickerType < 0 || selectedStickerType >= 5) {
+    if (selectedStickerType < 0 || selectedStickerType >= PRAISE_STICKERS.length) {
         selectedStickerType = 0;
     }
 
-    const theme = getActiveStickerTheme();
-    const themeObj = STICKER_THEMES[theme] || STICKER_THEMES.moon;
-
-    // 모달 타이틀 업데이트
-    const modalTitleEl = document.getElementById("modal-memo-input-title");
-    const modalDescEl = document.getElementById("modal-memo-input-desc");
-    if (modalTitleEl) {
-        modalTitleEl.textContent = `${themeObj.name} 스티커 선택`;
-    }
-    if (modalDescEl) {
-        modalDescEl.textContent = `${themeObj.desc || '붙이고 싶은 예쁜 스티커를 선택해 주세요!'}`;
-    }
-
-    themeObj.items.forEach((sticker, id) => {
-        const name = typeof sticker === "string" ? sticker : sticker.name;
-        const isSel = id === selectedStickerType;
+    PRAISE_STICKERS.forEach(sticker => {
+        const isSel = sticker.id === selectedStickerType;
         const item = document.createElement("div");
         item.className = "sticker-option-item" + (isSel ? " selected" : "");
-        item.dataset.stickerId = id;
+        item.dataset.stickerId = sticker.id;
         item.innerHTML = `
             <div class="sticker-option-icon">
-                ${getThemeStickerMarkup(theme, id)}
+                <img src="${sticker.src}" alt="${sticker.name}" draggable="false" />
             </div>
-            <span class="sticker-option-label">${name}</span>
+            <span class="sticker-option-label">${sticker.name}</span>
         `;
 
         const selectHandler = (e) => {
             if (e) e.stopPropagation();
-            selectedStickerType = id;
+            selectedStickerType = sticker.id;
             gridContainer.querySelectorAll(".sticker-option-item").forEach(el => el.classList.remove("selected"));
             item.classList.add("selected");
         };
@@ -641,8 +606,6 @@ function renderStickerPickerGrid() {
         gridContainer.appendChild(item);
     });
 }
-
-
 // ==========================================
 // 5.5 등록된 보드 목록 관리 및 사이드바 렌더링
 // ==========================================
@@ -748,7 +711,7 @@ async function apiUpdateBoardTitle(boardId, newTitle) {
 async function openBoardEditModal(board) {
     let fullBoard = (await apiGetBoard(board.id)) || board;
     editTargetBoard = fullBoard;
-    const hasPermission = localStorage.getItem("is_editor") === "true";
+    const hasPermission = getAppStorage("is_editor") === "true";
 
     if (hasPermission) {
         if (editBoardTitle) editBoardTitle.disabled = false;
@@ -773,11 +736,11 @@ async function openBoardEditModal(board) {
 
 // 등록된 보드 목록 관리 헬퍼 함수들
 function getRegisteredBoards() {
-    const list = localStorage.getItem("registered_boards");
+    const list = getAppStorage("registered_boards");
     const parsed = list ? JSON.parse(list) : [];
     const filtered = parsed.filter(b => isMoonBoard(b));
     if (parsed.length !== filtered.length) {
-        localStorage.setItem("registered_boards", JSON.stringify(filtered));
+        setAppStorage("registered_boards", JSON.stringify(filtered));
     }
     return filtered.map(b => {
         if (b && b.title && (b.title.includes("우주") || b.title.includes("칭찬나라") || b.title.includes("스티커핀"))) {
@@ -798,16 +761,16 @@ function addRegisteredBoard(boardId, title, rewardText) {
     } else {
         list.push({ id: boardId, title: title, reward_text: rewardText || "" });
     }
-    localStorage.setItem("registered_boards", JSON.stringify(list));
+    setAppStorage("registered_boards", JSON.stringify(list));
 }
 
 function getBoardOrder() {
-    const saved = localStorage.getItem("board_order");
+    const saved = getAppStorage("board_order");
     return saved ? JSON.parse(saved) : [];
 }
 
 function saveBoardOrder(orderedIds) {
-    localStorage.setItem("board_order", JSON.stringify(orderedIds));
+    setAppStorage("board_order", JSON.stringify(orderedIds));
 
     let list = getRegisteredBoards();
     list.sort((a, b) => {
@@ -817,16 +780,16 @@ function saveBoardOrder(orderedIds) {
         if (idxB === -1) return -1;
         return idxA - idxB;
     });
-    localStorage.setItem("registered_boards", JSON.stringify(list));
+    setAppStorage("registered_boards", JSON.stringify(list));
 }
 
 function removeRegisteredBoard(boardId) {
     let list = getRegisteredBoards();
     list = list.filter(b => b.id !== boardId);
-    localStorage.setItem("registered_boards", JSON.stringify(list));
+    setAppStorage("registered_boards", JSON.stringify(list));
 
     const orderList = getBoardOrder().filter(id => id !== boardId);
-    localStorage.setItem("board_order", JSON.stringify(orderList));
+    setAppStorage("board_order", JSON.stringify(orderList));
 
     if (currentBoardId === boardId) {
         if (list.length > 0) {
@@ -834,7 +797,7 @@ function removeRegisteredBoard(boardId) {
         } else {
             currentBoardId = "DEFAULT";
         }
-        localStorage.setItem("current_board_id", currentBoardId);
+        setAppStorage("current_board_id", currentBoardId);
     }
 }
 
@@ -874,7 +837,7 @@ async function renderBoardList(force = false) {
         });
     }
 
-    const canEditNow = localStorage.getItem("is_editor") === "true";
+    const canEditNow = getAppStorage("is_editor") === "true";
     const fingerprint = canEditNow + '#' + combinedList.map(b => `${b.id}:${b.title}:${b.reward_text}:${b.id === currentBoardId}`).join('|');
 
     if (!force && fingerprint === lastBoardListFingerprint) {
@@ -917,7 +880,7 @@ function createBoardItemDOM(board, isLocal) {
     item.className = `board-item ${isActive ? "active" : ""}`;
     item.dataset.boardId = board.id;
 
-    const hasPermission = localStorage.getItem("is_editor") === "true";
+    const hasPermission = getAppStorage("is_editor") === "true";
 
     const editButtonHtml = `
         <button class="btn-edit-board" title="스티커판 정보 수정" aria-label="스티커판 정보 수정">
@@ -961,8 +924,8 @@ function createBoardItemDOM(board, isLocal) {
         sidebarOverlay.classList.add("hidden");
 
         currentBoardId = board.id;
-        localStorage.setItem("current_board_id", currentBoardId);
-        isEditorMode = localStorage.getItem("is_editor") === "true";
+        setAppStorage("current_board_id", currentBoardId);
+        isEditorMode = getAppStorage("is_editor") === "true";
         updateRoleUI();
         await refreshApp();
 
@@ -989,7 +952,7 @@ function createBoardItemDOM(board, isLocal) {
         if (fromHandle) e.preventDefault();
 
         pressTimer = setTimeout(() => {
-            const canEdit = localStorage.getItem("is_editor") === "true";
+            const canEdit = getAppStorage("is_editor") === "true";
             if (!canEdit) {
                 showToast("편집자 권한(여자친구 모드)에서만 스티커판 순서를 변경할 수 있습니다. 🔒");
                 return;
@@ -1180,22 +1143,22 @@ async function refreshApp() {
             const registered = getRegisteredBoards();
             if (registered.length > 0 && isMoonBoard(registered[0])) {
                 currentBoardId = registered[0].id;
-                localStorage.setItem("current_board_id", currentBoardId);
+                setAppStorage("current_board_id", currentBoardId);
                 board = await apiGetBoard(currentBoardId);
             } else {
                 currentBoardId = "BON_WOOK";
-                localStorage.setItem("current_board_id", currentBoardId);
+                setAppStorage("current_board_id", currentBoardId);
                 board = await apiGetBoard(currentBoardId);
                 if (!board) {
                     currentBoardId = "TEST-COSMIC-BOARD";
-                    localStorage.setItem("current_board_id", currentBoardId);
+                    setAppStorage("current_board_id", currentBoardId);
                     board = await apiGetBoard(currentBoardId);
                 }
             }
         }
         if (!board && (currentBoardId === "DEFAULT" || !currentBoardId)) {
             currentBoardId = "TEST-COSMIC-BOARD";
-            localStorage.setItem("current_board_id", currentBoardId);
+            setAppStorage("current_board_id", currentBoardId);
             board = await apiGetBoard(currentBoardId);
         }
 
@@ -1242,7 +1205,6 @@ async function refreshApp() {
 
         // 2.5 테마 메타데이터(sticker_index === 999) 감지 및 즉시 적용
         const themeMeta = rawStickers.find(s => s.sticker_index === 999);
-        const stickerThemeMeta = rawStickers.find(s => s.sticker_index === 998);
         let activeThemeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#4A5568";
         if (themeMeta && themeMeta.memo) {
             const match = themeMeta.memo.match(/\[theme:(#[0-9A-Fa-f]{6})\]/);
@@ -1252,9 +1214,6 @@ async function refreshApp() {
                 if (currentBoard) currentBoard.theme_color = activeThemeColor;
             }
         }
-        const stickerThemeMatch = stickerThemeMeta && stickerThemeMeta.memo && stickerThemeMeta.memo.match(/\[sticker-theme:([a-z-]+)\]/i);
-        const activeStickerTheme = normalizeStickerTheme(stickerThemeMatch && stickerThemeMatch[1]);
-        localStorage.setItem(`board_sticker_theme_${currentBoardId}`, activeStickerTheme);
         applyThemeColor(activeThemeColor, false);
 
         // 실제 보드에 표시할 스티커만 필터링 (index < 100)
@@ -1301,12 +1260,10 @@ async function refreshApp() {
 
             const prevActive = slot.classList.contains("active");
             const prevMemo = slot.getAttribute("data-memo") || "";
-            const prevTheme = slot.getAttribute("data-sticker-theme") || "";
 
-            if (prevActive !== isActive || prevMemo !== rawMemo || prevTheme !== activeStickerTheme || !slot.hasChildNodes()) {
+            if (prevActive !== isActive || prevMemo !== rawMemo || !slot.hasChildNodes()) {
                 slot.className = `grid-slot ${isActive ? "active" : ""}`;
                 slot.setAttribute("data-memo", rawMemo);
-                slot.setAttribute("data-sticker-theme", activeStickerTheme);
                 slot.setAttribute("aria-label", `${i + 1}번째 칸, ${isActive ? "스티커 붙음" : "비어 있음"}`);
                 slot.innerHTML = `
                     ${getSeaCreatureStickerSvg(i, isActive, rawMemo)}
@@ -1324,7 +1281,6 @@ async function refreshApp() {
         }
         if (appMainLogo) appMainLogo.textContent = savedAppTitle;
         if (editAppTitle) editAppTitle.value = savedAppTitle;
-        if (editStickerTheme) editStickerTheme.value = activeStickerTheme;
         if (editReaderName) editReaderName.value = localStorage.getItem("global_reader_role_name") || currentBoard.reader_role_name || "남자친구 모드 (조회 전용)";
         if (editEditorName) editEditorName.value = localStorage.getItem("global_editor_role_name") || currentBoard.editor_role_name || "여자친구 모드 (부착 가능)";
 
@@ -1563,7 +1519,7 @@ btnPinSubmit.addEventListener("click", () => {
 
     if (pin === requiredPin) {
         isEditorMode = true;
-        localStorage.setItem("is_editor", "true");
+        setAppStorage("is_editor", "true");
         localStorage.setItem(`board_pin_${currentBoardId}`, pin);
         inputPin.value = "";
         pinError.classList.add("hidden");
@@ -1586,7 +1542,7 @@ btnPinCancel.addEventListener("click", () => {
 btnToggleRole.addEventListener("click", () => {
     if (isEditorMode) {
         isEditorMode = false;
-        localStorage.removeItem("is_editor"); // 로그아웃 시 인증 승인 기록 삭제
+        removeAppStorage("is_editor"); // 로그아웃 시 인증 승인 기록 삭제
         updateRoleUI();
         refreshApp();
         showToast("조회 전용 모드로 복귀했습니다.");
@@ -1602,12 +1558,6 @@ if (btnShare) {
     btnShare.addEventListener("click", () => {
         modalShare.classList.remove("hidden");
         inputCreateBoardTitle.value = "";
-        const activeTheme = getActiveStickerTheme();
-        const createThemeSelect = document.getElementById("create-board-theme");
-        if (createThemeSelect) {
-            createThemeSelect.value = activeTheme;
-        }
-        renderThemePreviewBar("create-theme-preview-bar", activeTheme);
         inputCreateBoardTitle.focus();
     });
 }
@@ -1639,16 +1589,14 @@ btnCreateBoard.addEventListener("click", async () => {
         created_at: new Date().toISOString()
     };
 
-    const chosenTheme = (document.getElementById("create-board-theme") && document.getElementById("create-board-theme").value) || "moon";
     const result = await apiCreateBoard(newBoard);
     if (result.success) {
         currentBoardId = finalCode;
-        localStorage.setItem("current_board_id", finalCode);
+        setAppStorage("current_board_id", finalCode);
         localStorage.setItem(`board_pin_${finalCode}`, activePin);
         localStorage.setItem(`board_theme_color_${finalCode}`, activeColor);
         await apiSaveThemeColor(finalCode, activeColor);
-        await saveStickerTheme(chosenTheme);
-        localStorage.setItem("is_editor", "true");
+        setAppStorage("is_editor", "true");
         inputCreateBoardTitle.value = "";
         isEditorMode = true;
         updateRoleUI();
@@ -1665,25 +1613,7 @@ btnCreateBoard.addEventListener("click", async () => {
 // 설정 다이얼로그 노출/숨김
 btnSettings.addEventListener("click", () => {
     modalSettings.classList.remove("hidden");
-    const activeTheme = getActiveStickerTheme();
-    if (editStickerTheme) {
-        editStickerTheme.value = activeTheme;
-    }
-    renderThemePreviewBar("theme-sticker-preview-bar", activeTheme);
 });
-
-if (editStickerTheme) {
-    editStickerTheme.addEventListener("change", (e) => {
-        renderThemePreviewBar("theme-sticker-preview-bar", e.target.value);
-    });
-}
-
-const createBoardThemeSelect = document.getElementById("create-board-theme");
-if (createBoardThemeSelect) {
-    createBoardThemeSelect.addEventListener("change", (e) => {
-        renderThemePreviewBar("create-theme-preview-bar", e.target.value);
-    });
-}
 
 btnSettingsClose.addEventListener("click", () => {
     modalSettings.classList.add("hidden");
@@ -1754,7 +1684,10 @@ function updatePaletteUI(hex) {
         colorPreviewBox.style.backgroundColor = hex;
     }
     if (colorPreviewText) {
-        colorPreviewText.textContent = hex;
+        if (document.activeElement !== colorPreviewText) {
+            if ('value' in colorPreviewText) colorPreviewText.value = hex;
+            colorPreviewText.textContent = hex;
+        }
     }
 
     const presetBtns = document.querySelectorAll(".color-preset-btn");
@@ -1868,7 +1801,10 @@ function onRgbNumInputChange(isBlur = false) {
     const hex = rgbToHex(r, g, b);
     if (inputCustomColor) inputCustomColor.value = hex;
     if (colorPreviewBox) colorPreviewBox.style.backgroundColor = hex;
-    if (colorPreviewText) colorPreviewText.textContent = hex;
+    if (colorPreviewText && document.activeElement !== colorPreviewText) {
+        if ('value' in colorPreviewText) colorPreviewText.value = hex;
+        colorPreviewText.textContent = hex;
+    }
 
     const presetBtns = document.querySelectorAll(".color-preset-btn");
     presetBtns.forEach(btn => {
@@ -1876,6 +1812,71 @@ function onRgbNumInputChange(isBlur = false) {
             btn.classList.add("active");
         } else {
             btn.classList.remove("active");
+        }
+    });
+}
+
+function parseHexColor(val) {
+    if (!val) return null;
+    let s = val.trim();
+    if (s.startsWith("#")) s = s.slice(1);
+    s = s.toUpperCase();
+    if (!/^[0-9A-F]+$/.test(s)) return null;
+    if (s.length === 3) {
+        return `#${s[0]}${s[0]}${s[1]}${s[1]}${s[2]}${s[2]}`;
+    }
+    if (s.length === 6) {
+        return `#${s}`;
+    }
+    return null;
+}
+
+function onHexInputChange(isBlur = false) {
+    if (!colorPreviewText) return;
+    let val = colorPreviewText.value.trim().toUpperCase();
+    if (val && !val.startsWith("#")) {
+        val = "#" + val;
+    }
+
+    const parsedHex = parseHexColor(val);
+    if (parsedHex) {
+        const { r, g, b } = hexToRgb(parsedHex);
+        if (rangeR) rangeR.value = r;
+        if (rangeG) rangeG.value = g;
+        if (rangeB) rangeB.value = b;
+        if (valR) { if ('value' in valR) valR.value = r; valR.textContent = r; }
+        if (valG) { if ('value' in valG) valG.value = g; valG.textContent = g; }
+        if (valB) { if ('value' in valB) valB.value = b; valB.textContent = b; }
+        if (inputCustomColor) inputCustomColor.value = parsedHex;
+        if (colorPreviewBox) colorPreviewBox.style.backgroundColor = parsedHex;
+
+        const presetBtns = document.querySelectorAll(".color-preset-btn");
+        presetBtns.forEach(btn => {
+            if (btn.getAttribute("data-color").toUpperCase() === parsedHex) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+
+        if (isBlur) {
+            colorPreviewText.value = parsedHex;
+        }
+    } else if (isBlur) {
+        const r = parseInt(rangeR ? rangeR.value : "0", 10) || 0;
+        const g = parseInt(rangeG ? rangeG.value : "0", 10) || 0;
+        const b = parseInt(rangeB ? rangeB.value : "0", 10) || 0;
+        colorPreviewText.value = rgbToHex(r, g, b);
+    }
+}
+
+if (colorPreviewText && colorPreviewText.tagName === "INPUT") {
+    colorPreviewText.addEventListener("input", () => onHexInputChange(false));
+    colorPreviewText.addEventListener("change", () => onHexInputChange(true));
+    colorPreviewText.addEventListener("blur", () => onHexInputChange(true));
+    colorPreviewText.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            colorPreviewText.blur();
         }
     });
 }
@@ -1955,7 +1956,7 @@ btnSwitchBoard.addEventListener("click", async () => {
     const board = await apiGetBoard(code);
     if (board) {
         currentBoardId = code;
-        localStorage.setItem("current_board_id", code);
+        setAppStorage("current_board_id", code);
         inputSwitchBoard.value = "";
         isEditorMode = false; // 새로운 보드로 이동할 때는 기본 뷰어 모드로 안전화
         updateRoleUI();
@@ -1976,7 +1977,6 @@ btnSettingsSave.addEventListener("click", async () => {
     modalSettings.classList.add("hidden");
 
     const newAppTitle = editAppTitle ? editAppTitle.value.trim() : "";
-    const newStickerTheme = normalizeStickerTheme(editStickerTheme ? editStickerTheme.value : "moon");
     const newPin = editPin.value.trim();
     const newReaderName = editReaderName.value.trim();
     const newEditorName = editEditorName.value.trim();
@@ -2001,11 +2001,10 @@ btnSettingsSave.addEventListener("click", async () => {
     const result = await apiCreateBoard(updated);
     // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
     currentBoard = updated;
-    await saveStickerTheme(newStickerTheme);
     await refreshApp();
 
     if (result.success) {
-        showToast(`${STICKER_THEMES[newStickerTheme].name} 테마와 칭찬판 설정이 저장되었습니다. ✨`);
+        showToast("칭찬판 보안 및 라벨 설정이 변경되었습니다. ✨");
     } else {
         showToast(`⚠️ 서버 저장 실패: ${result.error}`);
     }
@@ -2014,7 +2013,7 @@ btnSettingsSave.addEventListener("click", async () => {
 // 칭찬판 정보 수정 저장 처리 (길게 누르기 모달)
 btnBoardEditSave.addEventListener("click", async () => {
     if (!editTargetBoard) return;
-    const hasPermission = localStorage.getItem("is_editor") === "true";
+    const hasPermission = getAppStorage("is_editor") === "true";
     if (!hasPermission) return;
 
     const count = parseInt(editBoardTargetCount.value);
@@ -2075,7 +2074,7 @@ btnDeleteConfirm.addEventListener("click", async () => {
         if (wasActive) {
             sidebar.classList.remove("open");
             sidebarOverlay.classList.add("hidden");
-            isEditorMode = localStorage.getItem("is_editor") === "true";
+            isEditorMode = getAppStorage("is_editor") === "true";
             updateRoleUI();
             const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
             window.history.replaceState({ path: newUrl }, "", newUrl);
@@ -2307,38 +2306,35 @@ document.addEventListener("keydown", (e) => {
 // ==========================================
 // 9. 앱 초기 구동 및 실시간 데이터 싱크 폴링
 // ==========================================
-function initializeLegacyApp() {
+document.addEventListener("DOMContentLoaded", () => {
     // 1. 기존 데모/더미 데이터 로컬스토리지 캐시 정리
     localStorage.removeItem("board_DEFAULT");
     localStorage.removeItem("stickers_DEFAULT");
 
     // [소독 패치] 로컬스토리지 내 타 폴더 및 테스트 칭찬판 찌꺼기 100% 완전 정제 (프라이버시 보호)
     try {
-        const boards = JSON.parse(localStorage.getItem("registered_boards") || "[]");
+        const boards = JSON.parse(getAppStorage("registered_boards") || "[]");
         const cleaned = boards.filter(b => isMoonBoard(b));
-        localStorage.setItem("registered_boards", JSON.stringify(cleaned));
+        setAppStorage("registered_boards", JSON.stringify(cleaned));
 
         // 현재 선택된 보드가 달 보드가 아니면 안전한 달 보드로 강제 전환
-        let curId = localStorage.getItem("current_board_id");
+        let curId = getAppStorage("current_board_id");
         if (!curId || !isMoonBoard(curId)) {
             const fallbackId = (cleaned.length > 0) ? cleaned[0].id : "BON_WOOK";
-            localStorage.setItem("current_board_id", fallbackId);
+            setAppStorage("current_board_id", fallbackId);
             currentBoardId = fallbackId;
         }
 
         // 보드 정렬 순서 정제
-        const order = JSON.parse(localStorage.getItem("board_order") || "[]");
+        const order = JSON.parse(getAppStorage("board_order") || "[]");
         const cleanedOrder = order.filter(id => isMoonBoard(id));
-        localStorage.setItem("board_order", JSON.stringify(cleanedOrder));
+        setAppStorage("board_order", JSON.stringify(cleanedOrder));
 
-        // 타 앱 보드 개별 캐시 찌꺼기 완전 삭제
+        // 테스트 보드 캐시만 안전하게 정리 (타 앱 보드는 절대 건드리지 않음)
         for (let i = localStorage.length - 1; i >= 0; i--) {
             const k = localStorage.key(i);
-            if (k && (k.startsWith("board_") || k.startsWith("stickers_"))) {
-                const subId = k.replace("board_", "").replace("stickers_", "");
-                if (!isMoonBoard(subId)) {
-                    localStorage.removeItem(k);
-                }
+            if (k && (k.startsWith("board_TEST") || k.startsWith("stickers_TEST"))) {
+                localStorage.removeItem(k);
             }
         }
     } catch (e) {
@@ -2349,8 +2345,15 @@ function initializeLegacyApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const boardParam = urlParams.get("board");
     if (boardParam) {
-        currentBoardId = boardParam.trim().toUpperCase();
-        localStorage.setItem("current_board_id", currentBoardId);
+        const paramId = boardParam.trim().toUpperCase();
+        if (isMoonBoard(paramId)) {
+            currentBoardId = paramId;
+            setAppStorage("current_board_id", currentBoardId);
+        } else {
+            console.warn("URL로 전달된 보드 ID가 본 앱의 보드가 아닙니다:", paramId);
+            const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+            window.history.replaceState({ path: cleanUrl }, "", cleanUrl);
+        }
     }
 
     updateRoleUI();
@@ -2393,7 +2396,10 @@ function initializeLegacyApp() {
 
     // 2. 웰컴 스크린 칭찬판 최초 생성 처리
     btnSetupSubmit.addEventListener("click", async () => {
-        const code = setupBoardId.value.trim().toUpperCase();
+        let code = setupBoardId.value.trim().toUpperCase();
+        if (!code.startsWith("BON_WOOK") && !code.startsWith("MOON")) {
+            code = "BON_WOOK_" + code;
+        }
         const title = setupTitle.value.trim();
         const target = parseInt(setupTargetCount.value);
         const reward = setupReward.value.trim();
@@ -2431,8 +2437,8 @@ function initializeLegacyApp() {
         const result = await apiCreateBoard(newBoard);
         if (result.success) {
             currentBoardId = code;
-            localStorage.setItem("current_board_id", code);
-            localStorage.setItem("is_editor", "true");
+            setAppStorage("current_board_id", code);
+            setAppStorage("is_editor", "true");
             isEditorMode = true;
             updateRoleUI();
             await refreshApp();
@@ -2479,10 +2485,4 @@ function startAutoSync() {
     });
 
     startAutoSync();
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeLegacyApp, { once: true });
-} else {
-    initializeLegacyApp();
-}
+});
