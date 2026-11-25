@@ -824,6 +824,7 @@ async function renderBoardList(force = false) {
     });
 
     const combinedList = Array.from(boardMap.values()).filter(b => isMoonBoard(b) && !b.id.startsWith("TEST-") && !b.id.startsWith("TEST_"));
+    setAppStorage("registered_boards", JSON.stringify(combinedList.map(b => ({ id: b.id, title: b.title, reward_text: b.reward_text || "" }))));
 
     const orderList = getBoardOrder();
     if (orderList.length > 0) {
