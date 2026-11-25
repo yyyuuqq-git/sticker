@@ -37,6 +37,7 @@ import {
   apiRemoveSticker,
   apiUpdateStickerMemo,
   apiSaveThemeColor,
+  apiGetAllBoards,
   getNextSequentialBoardCode,
 } from "./services/api";
 import { applyThemeColor } from "./utils/colorUtils";
@@ -154,35 +155,56 @@ export default function App() {
     const savedEditor = getAppStorage("is_editor") === "true";
     setIsEditorMode(savedEditor);
 
-    // 2. Registered Boards sanitization
-    const validBoards = getRegisteredBoards();
-    setRegisteredBoards(validBoards);
+    const initApp = async () => {
+      // 2. Fetch server boards and sync with registered boards
+      let serverBoards = await apiGetAllBoards();
+      let localList = getRegisteredBoards();
 
-    // 3. Check URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramId = urlParams.get("board");
+      const boardMap = new Map();
+      serverBoards.forEach((b) => {
+        if (b && b.id && isMoonBoard(b)) {
+          boardMap.set(b.id, { id: b.id, title: b.title, reward_text: b.reward_text || "" });
+        }
+      });
+      localList.forEach((b) => {
+        if (b && b.id && isMoonBoard(b)) {
+          const existing = boardMap.get(b.id) || {};
+          boardMap.set(b.id, { ...existing, ...b });
+        }
+      });
 
-    if (paramId) {
-      if (isMoonBoard(paramId)) {
-        loadBoard(paramId.toUpperCase());
-        return;
-      } else {
-        // Cleanse invalid board from URL
-        window.history.replaceState({}, document.title, window.location.pathname);
+      const allValidBoards = Array.from(boardMap.values());
+      setRegisteredBoards(allValidBoards);
+      setAppStorage("registered_boards", JSON.stringify(allValidBoards));
+
+      // 3. Check URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramId = urlParams.get("board");
+
+      if (paramId) {
+        if (isMoonBoard(paramId)) {
+          loadBoard(paramId.toUpperCase());
+          return;
+        } else {
+          // Cleanse invalid board from URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
       }
-    }
 
-    // 4. Check localStorage active board
-    let curId = getAppStorage("current_board_id");
-    if (curId && isMoonBoard(curId)) {
-      loadBoard(curId);
-    } else if (validBoards.length > 0) {
-      loadBoard(validBoards[0].id);
-    } else {
-      // Show Welcome screen if no boards
-      setShowWelcome(true);
-      setLoading(false);
-    }
+      // 4. Check localStorage active board
+      let curId = getAppStorage("current_board_id");
+      if (curId && isMoonBoard(curId)) {
+        loadBoard(curId);
+      } else if (allValidBoards.length > 0) {
+        loadBoard(allValidBoards[0].id);
+      } else {
+        // Show Welcome screen if no boards
+        setShowWelcome(true);
+        setLoading(false);
+      }
+    };
+
+    initApp();
   }, [loadBoard]);
 
   // --- Realtime Subscription & Auto Sync ---
